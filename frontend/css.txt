@@ -1,0 +1,872 @@
+<style>
+  :root { 
+    --blue: #1a66ff; 
+    --bg-dark: #0f172a; 
+    --card-dark: #1e293b; 
+    --text-light: #f1f5f9;
+    --text-muted: #94a3b8;
+    --success: #10b981;
+    --danger: #ef4444;
+  }
+  
+  body { 
+    font-family: 'Inter', sans-serif; 
+    margin: 0; 
+    background: #f0f2f5; 
+    color: #1f2937;
+  }
+  
+  .hidden { display: none !important; }
+
+  /* --- LOGIN NUEVO ESTILO (Diseño Azul - Referencia Imagen) --- */
+  
+  .container-login { 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    min-height: 100vh; 
+    background: #eef2f6; 
+  }
+
+  .login-card-blue {
+    background: #2563eb; 
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    padding: 3rem 2.5rem;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(37, 99, 235, 0.3);
+    position: relative;
+    color: white;
+  }
+
+  .login-title-white {
+    color: white;
+    font-weight: 400;
+    font-size: 1.4rem;
+    margin-bottom: 2rem;
+    letter-spacing: 0.5px;
+  }
+
+  /* Banner de "Validando..." */
+  .status-banner-blue {
+    background: rgba(255, 255, 255, 0.2); 
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  /* Wrapper blanco para los inputs e iconos */
+  .input-wrapper-modern {
+    position: relative;
+    margin-bottom: 1.2rem;
+    background: white;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+
+  /* Inputs planos sin bordes */
+  .input-flat {
+    width: 100%;
+    border: none;
+    padding: 16px 15px;
+    font-size: 0.95rem;
+    outline: none;
+    color: #333;
+    background: transparent;
+    font-weight: 500;
+  }
+  
+  .input-flat::placeholder {
+    color: #9ca3af;
+  }
+
+  /* Caja del icono a la derecha */
+  .icon-box {
+    padding: 0 15px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+
+  /* Botón blanco tipo pastilla */
+  .btn-login-white {
+    background: white;
+    color: #2563eb; 
+    border: none;
+    border-radius: 30px; 
+    padding: 14px 40px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 160px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .btn-login-white:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+  }
+  
+  .btn-login-white:active {
+    transform: translateY(0);
+  }
+
+  .forgot-link {
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 2.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  
+  .forgot-link:hover {
+    text-decoration: underline;
+    opacity: 1;
+  }
+
+  /* Spinners pequeños */
+  .spinner-tiny-white {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  .spinner-blue {
+    width: 20px; height: 20px;
+    border: 3px solid #e0e7ff;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  /* --- ESTILOS DEL PANEL INTERNO --- */
+  
+  .stat-card {
+    flex: 1;
+    background: var(--card-dark);
+    padding: 15px 20px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    text-align: left;
+  }
+
+  #main-screen { 
+    background: var(--bg-dark);
+    min-height: 100vh; 
+    color: var(--text-light); 
+  }
+  
+  header { 
+    background: var(--card-dark); 
+    padding: 1rem 5%; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    border-bottom: 1px solid #334155; 
+  }
+  
+  /* Grid Eventos */
+  .grid-eventos { 
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+    gap: 20px; 
+    padding: 0 5% 2rem 5%; 
+  }
+  
+  .evento-card { 
+    background: var(--card-dark); 
+    padding: 1.5rem;
+    border-radius: 15px; 
+    border: 1px solid #334155; 
+    cursor: pointer; 
+    transition: 0.3s; 
+  }
+  
+  .evento-card:hover { 
+    border-color: var(--blue); 
+    transform: translateY(-3px); 
+    background: #26334a;
+  }
+
+  /* Barras de Progreso */
+  .cupo-badge { 
+    font-size: 0.75rem; 
+    padding: 2px 8px; 
+    border-radius: 10px;
+    font-weight: bold; 
+  }
+  .badge-ok { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+  .badge-full { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+  .progress-container { 
+    width: 100%; 
+    height: 6px;
+    background: #334155; 
+    border-radius: 10px; 
+    overflow: hidden; 
+    margin-top: 10px; 
+  }
+  
+  .progress-bar { 
+    height: 100%; 
+    background: var(--blue); 
+    transition: width 0.5s ease;
+  }
+  .bar-full { background: var(--danger) !important; }
+
+  /* Botones Generales */
+  .btn-p { 
+    background: var(--blue); 
+    color: white;
+    border: none; 
+    padding: 12px 20px; 
+    border-radius: 10px; 
+    cursor: pointer; 
+    font-weight: 600; 
+  }
+  
+  .btn-alt { 
+    background: #6366f1; 
+    color: white;
+    border: none; 
+    padding: 12px 20px; 
+    border-radius: 10px; 
+    cursor: pointer; 
+    font-weight: 600; 
+  }
+  
+  .btn-back { 
+    background: transparent;
+    border: 1px solid #475569; 
+    color: var(--text-muted); 
+    padding: 8px 15px; 
+    border-radius: 8px; 
+    cursor: pointer; 
+  }
+
+  /* BOTÓN SALIR REDISEÑADO (ROJO) */
+  .btn-salir { 
+    background: var(--danger); /* Rojo */
+    color: white; 
+    padding: 10px 20px; 
+    border-radius: 8px; 
+    border: none; 
+    font-size: 0.85rem; 
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);
+  }
+
+  .btn-salir:hover {
+    background: #dc2626; /* Rojo más oscuro al pasar mouse */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 10px rgba(239, 68, 68, 0.3);
+  }
+  
+  /* Inputs Generales */
+  .input-group { position: relative; margin-bottom: 1.2rem; text-align: left; }
+  .label-form { 
+    display: block;
+    font-size: 0.8rem; 
+    font-weight: 600; 
+    color: #64748b; 
+    margin-bottom: 6px; 
+  }
+  
+  .input-group input, .select-modern { 
+    width: 100%; 
+    padding: 12px 15px;
+    border-radius: 10px; 
+    border: 1px solid #e2e8f0; 
+    box-sizing: border-box; 
+    font-size: 0.95rem; 
+  }
+
+  /* Modal */
+  .modal-overlay { 
+    position: fixed; top:0; left:0; 
+    width:100%; height:100%; 
+    background: rgba(0,0,0,0.8); 
+    display:flex; 
+    justify-content:center; 
+    align-items:center; 
+    z-index:1000;
+  }
+  
+  .modal-card { 
+  background: white; 
+  padding: 2rem; 
+  border-radius: 1.5rem;
+  text-align:center; 
+  
+  /* --- CAMBIOS PARA ANCHO DINÁMICO --- */
+  width: fit-content;       /* Se adapta al ancho real del contenido (tabla) */
+  min-width: 350px;         /* Ancho mínimo para alertas de texto */
+  max-width: 95vw;          /* Puede crecer hasta el 95% del ancho de la pantalla */
+  max-height: 90vh;         /* Altura máxima para evitar que se salga de pantalla */
+  overflow: auto;           /* Scroll automático si el contenido es inmenso */
+  /* ----------------------------------- */
+
+  color: #1f2937;
+}
+  /* Animaciones */
+  .animate-in { animation: fadeIn 0.4s ease-out; }
+  @keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(10px); } 
+    to { opacity: 1; transform: translateY(0); } 
+  }
+  
+  .spinner-white { 
+    width: 18px; height: 18px; 
+    border: 2px solid rgba(255,255,255,0.3); 
+    border-top-color: #fff; 
+    border-radius: 50%; 
+    animation: spin 0.8s linear infinite; 
+  }
+  
+  @keyframes spin { 
+    to { transform: rotate(360deg); } 
+  }
+
+  .footer-actions { padding: 2rem 5%; display: flex; justify-content: center; }
+  .stats-container { 
+    display: flex; 
+    justify-content: space-around;
+    background: var(--card-dark); 
+    padding: 20px; 
+    border-radius: 15px; 
+    margin: 1.5rem 5%; 
+    border: 1px solid #334155; 
+  }
+  
+  .stat-box { 
+    text-align: center;
+    font-size: 0.9rem; 
+    color: var(--text-muted); 
+  }
+  .stat-box span { display: block; font-size: 1.5rem; font-weight: bold; color: var(--blue); }
+
+  /* --- SWITCH TOGGLE CSS (MODIFICADO: VERDE/GRIS) --- */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 22px;
+  }
+
+  .switch input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  /* Estado Inactivo (AUSENTE) - Color Gris */
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #64748b; /* Gris para Ausente */
+    transition: .4s;
+    border-radius: 34px;
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
+
+  /* Estado Activo (PRESENTE) - Color Verde */
+  input:checked + .slider {
+    background-color: #10b981; /* Verde éxito */
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(20px);
+  }
+
+  /* Estado Deshabilitado (Ya guardado) */
+  input:disabled + .slider {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #0f766e; /* Verde oscuro si ya asistió */
+  }
+  /* --- ESTADÍSTICAS AVANZADAS --- */
+  .filters-bar {
+    display: flex;
+    gap: 15px;
+    background: #1e293b;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid #334155;
+    flex-wrap: wrap;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+    min-width: 150px;
+  }
+
+  .filter-group label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: bold;
+  }
+
+  .input-flat-dark {
+    background: #0f172a;
+    border: 1px solid #334155;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    outline: none;
+    font-size: 0.9rem;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .stat-card h3 {
+    margin: 0;
+    font-size: 1.8rem;
+  }
+  /* --- ESTILOS MATRIZ DE ASISTENCIA --- */
+  #tabla-reporte-matriz th, #tabla-reporte-matriz td {
+    border: 1px solid #e2e8f0;
+    padding: 10px;
+    font-size: 0.85rem;
+    text-align: center;
+  }
+  
+  #tabla-reporte-matriz th {
+    background: #1e293b;
+    color: white;
+    white-space: nowrap;
+  }
+  
+  #tabla-reporte-matriz td:first-child {
+    text-align: left;
+    font-weight: bold;
+    background: #f8fafc;
+    position: sticky;
+    left: 0;
+    z-index: 5; /* Para que el nombre se quede fijo al hacer scroll */
+  }
+
+  .mark-present { color: #10b981; font-weight: bold; font-size: 1.1rem; }
+  .mark-absent { color: #ef4444; font-weight: bold; font-size: 1.1rem; }
+  .mark-empty { color: #cbd5e1; }
+
+  /* Botón PDF */
+.btn-pdf {
+  background: #dc2626; /* Rojo Adobe */
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px; /* Espacio entre icono y texto */
+  margin-bottom: 15px; /* Separación de la tabla */
+  transition: background 0.2s;
+}
+
+.btn-pdf:hover {
+  background: #b91c1c;
+}
+/* --- CORRECCIÓN VISTA MÓVIL (HEADER) --- */
+@media (max-width: 768px) {
+  
+  /* 1. Cambiar la dirección del Header a Columna */
+  header {
+    flex-direction: column;
+    padding: 1rem;
+    gap: 15px;
+  }
+
+  /* 2. Contenedor de botones: Usar Flex Wrap para que bajen de línea */
+  .nav-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  /* 3. El nombre del usuario: Que ocupe todo el ancho y se centre */
+  #user-display {
+    width: 100%;
+    text-align: center;
+    margin-right: 0 !important;
+    border-right: none !important; /* Quitamos la línea divisoria lateral */
+    border-bottom: 1px solid #334155; /* Ponemos línea abajo */
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  /* 4. Los botones: Hacer que ocupen el 48% (2 por fila) */
+  .nav-actions button {
+    flex: 1 1 45%; /* Crecer y ocupar casi la mitad */
+    font-size: 0.75rem; /* Letra un poco más chica */
+    padding: 10px 5px;
+    white-space: nowrap;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* 5. El botón salir: Que ocupe todo el ancho (rojo) */
+  .btn-salir {
+    flex: 1 1 100% !important;
+    margin-top: 5px;
+  }
+}
+/* --- CORRECCIÓN COLOR TABLA CALIFICACIONES --- */
+#tabla-notas {
+  color: #f1f5f9 !important; /* Texto claro */
+}
+
+#tabla-notas td {
+  color: #f1f5f9;
+  border-bottom: 1px solid #334155 !important;
+}
+
+/* Asegurar que el mensaje de "No hay alumnos" también se vea */
+#tabla-notas td[colspan] {
+  color: #94a3b8;
+  font-style: italic;
+}
+/* AGREGA ESTO EN TU CSS SI SE VE DESORDENADO */
+.grid-metrics { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+    gap: 20px; 
+    margin-bottom: 30px; 
+}
+
+.card-metric { 
+    background: #1e293b; 
+    color: white; 
+    padding: 20px; 
+    border-radius: 10px; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+/* BOTÓN DIPLOMA ESTUDIANTE */
+.btn-diploma-student {
+  width: 100%;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-diploma-student:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.btn-diploma-student:disabled {
+  background: #cbd5e1;
+  transform: none;
+  cursor: wait;
+}
+/* =========================================
+   === AJUSTES RESPONSIVOS (MÓVIL) ===
+   ========================================= */
+
+@media screen and (max-width: 768px) {
+
+  /* 1. CONTENEDORES PRINCIPALES */
+  main {
+    padding: 10px 3% !important; /* Menos margen lateral */
+  }
+
+  /* 2. MODALES (Hacerlos flexibles) */
+  .modal-card {
+    width: 95% !important; /* Que ocupen casi toda la pantalla */
+    max-height: 90vh;
+    overflow-y: auto; /* Scroll interno si es muy alto */
+    margin: 10px auto;
+  }
+
+  /* 3. TABLAS (Gradebook y Listas) */
+  /* Envuelve las tablas en un scroll horizontal para no romper el diseño */
+  .table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Scroll suave en iPhone */
+  }
+
+  /* Ajustar celdas para dedos humanos */
+  th, td {
+    padding: 10px 5px !important;
+    font-size: 0.85rem !important;
+    white-space: nowrap; /* Evita que el texto se parta feo */
+  }
+
+  input[type="number"] {
+    width: 45px !important; /* Inputs de notas un poco más grandes para el dedo */
+    padding: 8px !important;
+    font-size: 1rem !important; /* Evita zoom automático en iPhone */
+  }
+
+  /* 4. DASHBOARD Y CARDS */
+  .grid-metrics, 
+  div[style*="grid-template-columns"] {
+    /* Forzar 1 sola columna en móviles */
+    grid-template-columns: 1fr !important; 
+    gap: 15px !important;
+  }
+
+  /* 5. TOOLBAR DE BOTONES (Gradebook) */
+  #gradebook-toolbar {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 10px;
+  }
+
+  #gradebook-toolbar div {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr; /* Botones en 2 columnas */
+    gap: 8px;
+    width: 100%;
+  }
+
+  #gradebook-toolbar button {
+    width: 100%;
+    justify-content: center;
+    padding: 12px !important; /* Botones más altos para tocar fácil */
+  }
+
+  /* 6. PORTAL ALUMNO */
+  #student-screen header {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+  
+  #student-content div[style*="display:grid"] {
+    grid-template-columns: 1fr !important; /* Tarjetas de cursos una debajo de otra */
+  }
+
+  /* Botones de acción en tarjetas */
+  .btn-diploma-student, button {
+    padding: 12px 15px !important; /* Zona táctil más grande */
+  }
+
+  /* 7. LOGIN */
+  .login-card-blue {
+    width: 90% !important;
+    padding: 2rem 1.5rem !important;
+  }
+}
+/* --- ESTILOS CENTRO DE REPORTES --- */
+.card-reporte {
+  background: white; 
+  border: 1px solid #e2e8f0; 
+  border-radius: 12px;
+  padding: 20px; 
+  text-align: center; 
+  cursor: pointer; 
+  transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.card-reporte:hover { 
+  transform: translateY(-3px); 
+  border-color: #3b82f6; 
+  box-shadow: 0 10px 15px rgba(37, 99, 235, 0.1); 
+}
+
+.icon-rep { 
+  font-size: 2rem; 
+  margin-bottom: 10px; 
+}
+
+.title-rep { 
+  font-weight: bold; 
+  color: #1e293b; 
+  font-size: 0.9rem; 
+}
+/* --- TOAST NOTIFICATIONS (Alertas Flotantes) --- */
+#toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  min-width: 300px;
+  background: #1e293b; /* Fondo oscuro */
+  color: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transform: translateX(120%); /* Oculto a la derecha */
+  transition: transform 0.3s ease-out;
+  border-left: 5px solid #3b82f6; /* Azul por defecto */
+}
+
+.toast.show {
+  transform: translateX(0);
+}
+
+.toast.success { border-left-color: #10b981; } /* Verde */
+.toast.error { border-left-color: #ef4444; }   /* Rojo */
+.toast.warning { border-left-color: #f59e0b; } /* Naranja */
+
+.toast-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.toast-title { font-weight: bold; font-size: 0.95rem; margin-bottom: 2px; }
+.toast-msg { font-size: 0.85rem; color: #cbd5e1; }
+/* --- ESTILOS DEL CONTADOR EN VIVO --- */
+.contador-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.contador-card {
+  background: #1e293b; /* Fondo oscuro elegante */
+  color: white;
+  padding: 10px 25px;
+  border-radius: 50px; /* Bordes redondos tipo cápsula */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Inter', sans-serif;
+  border: 1px solid #3b82f6;
+}
+
+.contador-label {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.contador-numero {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.val-presente { color: #10b981; } /* Verde */
+.val-total { color: #94a3b8; }    /* Gris */
+.contador-divider { font-size: 1.2rem; opacity: 0.5; }
+/* --- VALIDATION STYLES --- */
+.required {
+  color: #ef4444; 
+  font-weight: bold; 
+  margin-left: 4px;
+}
+
+.input-error { 
+  border: 2px solid #ef4444 !important; 
+  background-color: #fef2f2; 
+  transition: all 0.3s ease;
+}
+
+.input-error:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+}
+
+/* --- VIEW TOGGLE BUTTONS --- */
+.btn-view {
+  background: transparent;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+}
+
+.btn-view:first-child {
+  border-radius: 6px 0 0 6px;
+  border-right: none;
+}
+
+.btn-view:last-child {
+  border-radius: 0 6px 6px 0;
+}
+
+.btn-view:hover {
+  background: rgba(255,255,255,0.05);
+  color: white;
+}
+
+.btn-view.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+</style>

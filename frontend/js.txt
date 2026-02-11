@@ -1,0 +1,4161 @@
+<script>
+  //
+// --- ESTILOS Y HTML PARA EL MODAL DE ENVÍO MASIVO ---
+// Inyectamos esto dinámicamente para no tocar tu HTML principal
+document.addEventListener('DOMContentLoaded', function() {
+  const modalHTML = `
+  <div id="modal-masivo" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:#1e293b; padding:25px; border-radius:10px; width:500px; max-width:90%; border:1px solid #334155; color:white; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+      
+      <h3 style="margin-top:0; color:#3b82f6;">🚀 Envío Masivo de Diplomas</h3>
+      
+      <div id="paso-confirmacion">
+        <p>Se enviarán diplomas a los siguientes participantes:</p>
+        <div style="max-height:200px; overflow-y:auto; background:#0f172a; padding:10px; border-radius:5px; margin-bottom:15px; border:1px solid #334155;">
+           <ul id="lista-envio" style="list-style:none; padding:0; margin:0; font-size:0.9rem;"></ul>
+        </div>
+        <p style="text-align:right; font-weight:bold;">Total a enviar: <span id="total-envio" style="color:#10b981;">0</span></p>
+        
+        <div style="text-align:right; margin-top:20px;">
+          <button onclick="cerrarModalMasivo()" style="padding:8px 15px; background:transparent; color:#94a3b8; border:none; cursor:pointer; margin-right:10px;">Cancelar</button>
+          <button onclick="ejecutarEnvioMasivo()" style="padding:8px 20px; background:#3b82f6; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Confirmar y Enviar 📨</button>
+        </div>
+      </div>
+
+      <div id="paso-progreso" style="display:none; text-align:center;">
+        <p id="txt-progreso" style="margin-bottom:10px;">Iniciando...</p>
+        <div style="width:100%; background:#334155; height:10px; border-radius:5px; overflow:hidden;">
+          <div id="barra-progreso" style="width:0%; height:100%; background:#10b981; transition:width 0.3s;"></div>
+        </div>
+        <p style="margin-top:20px; color:#94a3b8; font-size:0.8rem;">Por favor no cierres esta ventana.</p>
+      </div>
+
+    </div>
+  </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // --- INYECTAR MODAL DE CÓDIGO 2FA (ALUMNO) ---
+  var modalCodigoHTML = `
+  <div id="modal-codigo-alumno" class="modal-overlay hidden">
+    <div class="modal-card" style="width: 400px; padding:30px;">
+      <div style="margin-bottom:20px;">
+        <span style="font-size:3rem;">🛡️</span>
+        <h3 style="margin:10px 0 5px 0; color:#1e293b;">Verificación de Seguridad</h3>
+        <p style="color:#64748b; font-size:0.9rem;">Hemos enviado un código a tu correo.</p>
+        <p id="msg-email-alumno" style="font-weight:bold; color:#2563eb; font-size:0.9rem; margin-bottom:5px;"></p>
+      </div>
+      <div class="input-group">
+        <label class="label-form" style="text-align:center;">Ingresa el Código</label>
+        <input type="text" id="input-codigo-2fa" placeholder="123456" 
+               style="font-size: 1.5rem; text-align: center; letter-spacing: 5px; font-weight: bold; color: #334155;" maxlength="6">
+      </div>
+      <button onclick="confirmarCodigoAlumno()" class="btn-p" style="width:100%; margin-top:10px;">Verificar y Entrar</button>
+      <div style="margin-top:20px; font-size:0.85rem; color:#64748b;">
+        ¿No recibiste el código? <br>
+        <button id="btn-reenviar-code" onclick="reenviarCodigo()" disabled 
+                style="background:none; border:none; color:#94a3b8; cursor:not-allowed; margin-top:5px; font-weight:bold;">
+            Reenviar en 30s
+        </button>
+      </div>
+      <button onclick="cerrarModalCodigoAlumno()" class="btn-back" style="width:100%; margin-top:20px; border:none;">Cancelar</button>
+    </div>
+  </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalCodigoHTML);
+  
+  // --- INYECTAR TOAST CONTAINER SI NO EXISTE ---
+  if(!document.getElementById('toast-container')) {
+    document.body.insertAdjacentHTML('beforeend', '<div id="toast-container"></div>');
+  }
+  
+  // --- INYECTAR MODAL DE DETALLE ASISTENCIA (ALUMNO) ---
+  if(!document.getElementById('modal-asistencia-alumno')) {
+    document.body.insertAdjacentHTML('beforeend', `
+    <div id="modal-asistencia-alumno" class="modal-overlay hidden">
+      <div class="modal-card" style="width:500px; padding:25px;">
+        <h3 style="margin:0 0 5px 0; color:#1e293b;">📋 Detalle de Asistencia</h3>
+        <p id="asist-titulo-curso" style="color:#3b82f6; font-weight:bold; margin-bottom:15px;"></p>
+        <div style="max-height:300px; overflow-y:auto;">
+          <table style="width:100%; border-collapse:collapse;">
+            <thead><tr style="background:#f1f5f9;">
+              <th style="padding:10px; text-align:left; color:#64748b; font-size:0.85rem;">Fecha</th>
+              <th style="padding:10px; text-align:center; color:#64748b; font-size:0.85rem;">Estado</th>
+            </tr></thead>
+            <tbody id="tabla-detalle-asistencia"></tbody>
+          </table>
+        </div>
+        <button onclick="document.getElementById('modal-asistencia-alumno').classList.add('hidden')" class="btn-back" style="width:100%; margin-top:15px;">Cerrar</button>
+      </div>
+    </div>
+    `);
+  }
+  
+  // --- INYECTAR MODAL DE DETALLE NOTAS (ALUMNO) ---
+  if(!document.getElementById('modal-detalle-alumno')) {
+    document.body.insertAdjacentHTML('beforeend', `
+    <div id="modal-detalle-alumno" class="modal-overlay hidden">
+      <div class="modal-card" style="width:500px; padding:25px;">
+        <h3 style="margin:0 0 5px 0; color:#1e293b;">📝 Detalle de Calificaciones</h3>
+        <p id="detalle-titulo-curso" style="color:#3b82f6; font-weight:bold; margin-bottom:15px;"></p>
+        <div style="max-height:300px; overflow-y:auto;">
+          <table style="width:100%; border-collapse:collapse;">
+            <thead><tr style="background:#f1f5f9;">
+              <th style="padding:10px; text-align:left; color:#64748b; font-size:0.85rem;">Actividad</th>
+              <th style="padding:10px; text-align:center; color:#64748b; font-size:0.85rem;">Peso</th>
+              <th style="padding:10px; text-align:center; color:#64748b; font-size:0.85rem;">Nota</th>
+            </tr></thead>
+            <tbody id="tabla-detalle-notas"></tbody>
+          </table>
+        </div>
+        <button onclick="document.getElementById('modal-detalle-alumno').classList.add('hidden')" class="btn-back" style="width:100%; margin-top:15px;">Cerrar</button>
+      </div>
+    </div>
+    `);
+  }
+
+  // --- INYECTAR MODAL GENÉRICO (custom-modal) SI NO EXISTE ---
+  if(!document.getElementById('custom-modal')) {
+    document.body.insertAdjacentHTML('beforeend', `
+    <div id="custom-modal" class="modal-overlay hidden" style="z-index: 9999;">
+      <div class="modal-card animate-in" style="width: 400px; max-width: 95%; text-align: center; padding: 30px;">
+        <div id="modal-icon" style="font-size: 3rem; margin-bottom: 15px;">⚠️</div>
+        <h3 id="modal-title" style="margin: 0 0 10px 0; color: #1e293b;">Atención</h3>
+        <p id="modal-message" style="color: #64748b; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5;"></p>
+        <div id="modal-actions" style="display: flex; gap: 10px; justify-content: center;">
+          <button onclick="document.getElementById('custom-modal').classList.add('hidden')" class="btn-p">Aceptar</button>
+        </div>
+      </div>
+    </div>
+    `);
+  }
+
+  // --- INYECTAR MODAL DE BACKUP (ADMIN) ---
+  if(!document.getElementById('modal-backup')) {
+    document.body.insertAdjacentHTML('beforeend', `
+    <div id="modal-backup" class="modal-overlay hidden">
+      <div class="modal-card animate-in" style="width: 450px; max-width: 95%;">
+        <div style="text-align: center; margin-bottom: 20px;">
+           <span style="font-size: 3rem;">📦</span>
+           <h3 style="margin: 10px 0 5px 0; color: #1e293b;">Copia de Seguridad</h3>
+           <p style="color: #64748b; font-size: 0.9rem;">Elige el formato para descargar tus datos.</p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+           <button onclick="iniciarBackupExcel()" class="btn-p" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: #10b981;">
+              <span style="font-size: 1.2rem;">📊</span> 
+              <div>
+                 <div style="font-weight: bold;">Generar Excel</div>
+                 <div style="font-size: 0.75rem; opacity: 0.9;">Copia completa en Google Drive</div>
+              </div>
+           </button>
+
+           <button onclick="iniciarBackupJSON()" class="btn-p" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: #3b82f6;">
+              <span style="font-size: 1.2rem;">📄</span> 
+              <div>
+                 <div style="font-weight: bold;">Descargar JSON</div>
+                 <div style="font-size: 0.75rem; opacity: 0.9;">Archivo de texto portable</div>
+              </div>
+           </button>
+
+           <div style="border-top: 1px solid #cbd5e1; margin: 10px 0;"></div>
+
+           <button onclick="document.getElementById('input-restore-json').click()" class="btn-p" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: #f59e0b;">
+              <span style="font-size: 1.2rem;">📂</span> 
+              <div>
+                 <div style="font-weight: bold;">Restaurar desde JSON</div>
+                 <div style="font-size: 0.75rem; opacity: 0.9;">Seleccionar archivo para cargar</div>
+              </div>
+           </button>
+           <input type="file" id="input-restore-json" accept=".json" style="display:none" onchange="procesarArchivoRestore(this)">
+        </div>
+
+        <button onclick="document.getElementById('modal-backup').classList.add('hidden')" class="btn-back" style="width: 100%; margin-top: 25px;">Cancelar</button>
+      </div>
+    </div>
+    `);
+  }
+  // --- RESTAURAR SESIÓN ---
+  const sesionGuardada = localStorage.getItem('sesion_usuario');
+  if(sesionGuardada) {
+     try {
+       user = JSON.parse(sesionGuardada);
+       iniciarSesionExitosa(user, false); // false = no guardar de nuevo (ya está)
+     } catch(e) {
+       console.error("Error restaurando sesión", e);
+       localStorage.removeItem('sesion_usuario');
+     }
+  }
+});
+// --- VARIABLES GLOBALES ---
+// Variable para recordar en qué curso estamos metidos
+let cursoActivoID = "";
+let modoAlumno = false; // false = Admin/Docente, true = Alumno
+
+// 1. FUNCIÓN PARA ALTERNAR DISEÑO (Admin <-> Alumno)
+function alternarModoLogin() {
+  modoAlumno = !modoAlumno; // Invertir estado
+  
+  const titulo = document.getElementById('login-title');
+  const passContainer = document.getElementById('pass-container');
+  const btnText = document.getElementById('btn-text');
+  const toggleLink = document.getElementById('toggle-login-mode');
+  const linkRecuperar = document.getElementById('link-recuperar');
+
+  if (modoAlumno) {
+    // --- MODO ALUMNO ---
+    titulo.innerText = "Portal del Estudiante";
+    passContainer.style.display = "none"; // Ocultar contraseña
+    btnText.innerText = "Consultar Notas";
+    toggleLink.innerText = "🔐 Soy Administrativo / Docente";
+    linkRecuperar.style.display = "none"; // Alumnos no tienen pass que recuperar
+  } else {
+    // --- MODO ADMIN ---
+    titulo.innerText = "Acceso Administrativo";
+    passContainer.style.display = "flex"; // Mostrar contraseña
+    btnText.innerText = "Iniciar Sesión";
+    toggleLink.innerText = "🎓 ¿Eres Alumno? Ingresa aquí";
+    linkRecuperar.style.display = "block";
+  }
+}
+
+// 2. FUNCIÓN MAESTRA DE LOGIN (Decide a quién llamar)
+function procesarLogin() {
+  const email = document.getElementById('email').value;
+  if (!email) return showToast("Atención", "Por favor ingresa tu correo.", "warning");
+
+  // Feedback visual de carga
+  const banner = document.getElementById('login-status-banner');
+  const btnText = document.getElementById('btn-text');
+  const btnLoader = document.getElementById('btn-loader');
+  const msg = document.getElementById('login-msg');
+
+  banner.classList.remove('hidden');
+  btnText.classList.add('hidden');
+  btnLoader.classList.remove('hidden');
+
+  if (modoAlumno) {
+     // --> RUTA A: LOGIN ALUMNO (NUEVO: CON 2FA)
+     msg.innerText = "Enviando código de seguridad...";
+     
+     // Llamamos a la función backend que envía el correo con el código
+     google.script.run.withSuccessHandler(res => {
+        resetLoginUI(); // Volvemos a mostrar el botón normal
+        
+        if(res.success) {
+           // --- ABRIR MODAL DE CÓDIGO DIRECTAMENTE ---
+           try {
+             window.emailAlumnoLogin = email; // GUARDAR EMAIL PARA VALIDACIÓN
+             document.getElementById('msg-email-alumno').innerText = email;
+             document.getElementById('modal-codigo-alumno').classList.remove('hidden');
+             document.getElementById('input-codigo-2fa').value = "";
+             document.getElementById('input-codigo-2fa').focus();
+             
+             // Cooldown reenvío (30s)
+             var btnReenviar = document.getElementById('btn-reenviar-code');
+             var seg = 30;
+             btnReenviar.disabled = true;
+             btnReenviar.style.color = "#94a3b8";
+             btnReenviar.style.cursor = "not-allowed";
+             btnReenviar.innerText = "Reenviar en " + seg + "s";
+             var timer = setInterval(function() {
+               seg--;
+               btnReenviar.innerText = "Reenviar en " + seg + "s";
+               if(seg <= 0) {
+                 clearInterval(timer);
+                 btnReenviar.disabled = false;
+                 btnReenviar.innerText = "Reenviar Código";
+                 btnReenviar.style.color = "#3b82f6";
+                 btnReenviar.style.cursor = "pointer";
+               }
+             }, 1000);
+             
+             showToast("Código enviado", "Revisa tu bandeja de entrada", "success");
+           } catch(err) {
+             console.error("Error abriendo modal:", err);
+             showToast("Error", "No se pudo abrir el formulario de código: " + err.message, "error");
+           }
+        } else {
+           showToast("Error", res.message, "error");
+        }
+     }).withFailureHandler(function(err) {
+        resetLoginUI();
+        showToast("Error", "Error de conexión: " + err.message, "error");
+     }).enviarCodigoAccesoAlumno(email);
+
+  } else {
+     // --> RUTA B: LOGIN ADMIN (Original: Con Password)
+     const pass = document.getElementById('pass').value;
+     if (!pass) {
+        resetLoginUI();
+        return showToast("Atención", "La contraseña es obligatoria para administrativos.", "warning");
+     }
+     
+     msg.innerText = "Validando credenciales...";
+     
+     google.script.run.withSuccessHandler(res => {
+        resetLoginUI();
+        if(res.success) {
+           iniciarSesionExitosa(res, true); // true = guardar en storage
+        } else {
+           showToast("Error", res.message, "error");
+        }
+     }).login(email, pass);
+  }
+}
+
+// Helper para iniciar sesión (Login o Restore)
+function iniciarSesionExitosa(datosUsuario, guardar) {
+   user = datosUsuario;
+   if(guardar) {
+      localStorage.setItem('sesion_usuario', JSON.stringify({
+         email: datosUsuario.email,
+         nombre: datosUsuario.nombre,
+         rol: datosUsuario.rol
+      }));
+   }
+
+   document.getElementById('login-screen').classList.add('hidden');
+   document.getElementById('main-screen').classList.remove('hidden');
+   document.getElementById('user-display').innerText = `👤 ${datosUsuario.nombre}`;
+   
+   // Mostrar botones según rol
+   if(user.rol === "root" || user.rol === "admin") {
+      document.getElementById('btn-admin-config').classList.remove('hidden');
+      document.getElementById('btn-usuarios-config').classList.remove('hidden');
+      document.getElementById('btn-logs').classList.remove('hidden');
+      document.getElementById('btn-stats').classList.remove('hidden');
+      document.getElementById('btn-participantes-crud').classList.remove('hidden');
+      document.getElementById('btn-reportes').classList.remove('hidden'); // Nuevo botón reportes
+   } else if(user.rol === "docente") {
+      document.getElementById('btn-stats').classList.add('hidden');
+      document.getElementById('btn-logs').classList.add('hidden'); 
+      document.getElementById('btn-participantes-crud').classList.add('hidden'); 
+      document.getElementById('btn-reportes').classList.add('hidden');
+   }
+
+   irAEventos();
+}
+
+
+function resetLoginUI() {
+  document.getElementById('login-status-banner').classList.add('hidden');
+  document.getElementById('btn-text').classList.remove('hidden');
+  document.getElementById('btn-loader').classList.add('hidden');
+}
+
+// Función para cerrar el modal
+function cerrarModalMasivo() {
+  document.getElementById('modal-masivo').style.display = 'none';
+  document.getElementById('paso-confirmacion').style.display = 'block';
+  document.getElementById('paso-progreso').style.display = 'none';
+}
+  //
+  let user = null;
+  let currentEv = null;
+  let editMode = false;
+  let currentEditId = null;
+
+  // --- NAVEGACIÓN ---
+  function ocultarSecciones() {
+    document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+  }
+
+  function irAEventos() {
+    ocultarSecciones();
+    document.getElementById('eventos-section').classList.remove('hidden');
+    cargarEventos();
+    verificarAdmin();
+  }
+
+  function verificarAdmin() {
+    // 1. Verificamos si hay usuario logueado y si es admin o root
+    if (user && (user.rol === "root" || user.rol === "admin")) {
+      
+      // --- Botones visibles para ambos roles (Admin y Root) ---
+      document.getElementById('btn-admin-config').classList.remove('hidden');
+      document.getElementById('btn-stats').classList.remove('hidden');
+      document.getElementById('btn-participantes-crud').classList.remove('hidden');
+      
+      // ✅ NUEVO: Habilitar el botón de Reportes
+      document.getElementById('btn-reportes').classList.remove('hidden');
+  
+      // --- Botones exclusivos solo para Root ---
+      if(user.rol === "root") {
+        document.getElementById('btn-backup-bd').classList.remove('hidden');
+        document.getElementById('btn-usuarios-config').classList.remove('hidden');
+        document.getElementById('btn-logs').classList.remove('hidden');
+      }
+    }
+}
+  // --- LOGIN ---
+  function handleLogin() {
+    const e = document.getElementById('email').value;
+    const p = document.getElementById('pass').value;
+    
+    // Referencias visuales
+    const banner = document.getElementById('login-status-banner');
+    const btnText = document.getElementById('btn-text');
+    const btnLoader = document.getElementById('btn-loader');
+    
+    if(banner) banner.classList.remove('hidden');
+    if(btnText) btnText.classList.add('hidden');    
+    if(btnLoader) btnLoader.classList.remove('hidden'); 
+    
+    google.script.run.withSuccessHandler(res => {
+      if(banner) banner.classList.add('hidden');
+      if(btnText) btnText.classList.remove('hidden');
+      if(btnLoader) btnLoader.classList.add('hidden');
+
+      if(res.success) {
+        user = res;
+        google.script.run.registrarLog(user.email, "Login", "Acceso", "Inició sesión desde el portal");
+        
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('main-screen').classList.remove('hidden');
+        document.getElementById('user-display').innerText = `👤 ${res.nombre}`;
+        irAEventos();
+      } else {
+        showModal({ title: "Error de Acceso", message: res.message, type: "error" });
+      }
+    
+    }).login(e, p);
+  }
+
+  // --- CRUD EVENTOS (TARJETAS DEL DASHBOARD) ---
+let eventViewMode = 'cards'; // Estado global de vista: 'cards' o 'list'
+
+function setEventView(mode) {
+  eventViewMode = mode;
+  
+  // Actualizar botones visualmente
+  document.getElementById('btn-view-cards').classList.remove('active');
+  document.getElementById('btn-view-list').classList.remove('active');
+  document.getElementById(`btn-view-${mode}`).classList.add('active');
+
+  // Recargar renderizado
+  cargarEventos();
+}
+
+function cargarEventos() {
+  const list = document.getElementById('eventos-list');
+  list.innerHTML = "<p style='color:white; text-align:center; padding:20px;'>Cargando talleres...</p>";
+  
+  google.script.run.withSuccessHandler(evs => {
+    if (!evs || evs.length === 0) {
+      list.innerHTML = "<p style='color:white; text-align:center;'>No hay eventos disponibles.</p>";
+      return;
+    }
+
+      if (eventViewMode === 'cards') {
+        // --- 1. RENDERIZADO DE CARDS (Original) ---
+        list.className = "grid-eventos"; // Restaurar Grid CSS
+        
+        list.innerHTML = evs.map(ev => {
+          const porcentaje = ev.cupoMax > 0 ? Math.round((ev.inscritos / ev.cupoMax) * 100) : 0;
+          const disponibles = ev.cupoMax - ev.inscritos;
+          
+          let botonesAccion = "";
+          if (user.rol === "root" || user.rol === "admin") {
+             botonesAccion = `
+               <div style="display:flex; gap:10px;">
+                 <button onclick="prepararEdicion('${ev.id}', '${ev.nombre}', '${ev.tipo}', '${ev.cupoMax}', '${ev.responsable}', '${ev.isoInicio}', '${ev.isoFin}')" title="Editar" style="background:none; border:none; cursor:pointer; font-size:1.1rem;">✏️</button>
+                 <button onclick="confirmarEliminar('${ev.id}')" title="Eliminar" style="background:none; border:none; cursor:pointer; font-size:1.1rem;">🗑️</button>
+                 <button onclick="irANotas('${ev.id}')" title="Gestión de Notas" style="background:none; border:none; cursor:pointer; font-size:1.1rem;">📝</button>
+               </div>`;
+          } else if (user.rol === "docente") {
+             botonesAccion = `
+               <div style="display:flex; gap:10px;">
+                 <button onclick="irANotas('${ev.id}')" title="Gestionar Notas y Tareas" style="background:none; border:none; cursor:pointer; font-size:1.1rem; color:white;">📝</button>
+               </div>`;
+          }
+    
+          return `
+            <div class="evento-card animate-in">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <small style="color:var(--blue); font-weight:bold;">${ev.tipo}</small>
+                ${botonesAccion} </div>
+              
+              <div onclick="abrirAsist('${ev.id}', '${ev.nombre}')" style="cursor:pointer">
+                <h3 style="margin: 10px 0 5px 0;">${ev.nombre}</h3>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">
+                  📅 ${ev.fecha} | ⏰ ${ev.horaInicio} - ${ev.horaFin}
+                </div>
+                <div class="progress-container">
+                  <div class="progress-bar ${porcentaje >= 100 ? 'bar-full' : ''}" style="width: ${porcentaje > 100 ? 100 : porcentaje}%"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.8rem; color:#94a3b8;">
+                   <span>👥 Inscritos: <strong style="color:white">${ev.inscritos}</strong></span>
+                   <span>🎟️ Libres: <strong style="color:${disponibles <= 0 ? '#ef4444' : '#10b981'}">${disponibles}</strong></span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+      } else {
+        // --- 2. RENDERIZADO DE TABLA (LISTA) ---
+        list.className = ""; // Quitar grid
+        list.innerHTML = `
+        <div class="tabla-container animate-in" style="background:var(--card-dark); border-radius:15px; border:1px solid #334155; padding:0;">
+          <table style="width:100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background:#1e293b; text-align:left; border-bottom:1px solid #334155;">
+                 <th style="padding:15px;">Evento / Taller</th>
+                 <th style="padding:15px;">Tipo</th>
+                 <th style="padding:15px;">Horario</th>
+                 <th style="padding:15px; text-align:center;">Cupo</th>
+                 <th style="padding:15px;">Docente / Resp.</th>
+                 <th style="padding:15px; text-align:right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${evs.map(ev => {
+                  const porcentaje = ev.cupoMax > 0 ? Math.round((ev.inscritos / ev.cupoMax) * 100) : 0;
+                  const disponibles = ev.cupoMax - ev.inscritos;
+                  
+                  let botonesAccion = "";
+                  if (user.rol === "root" || user.rol === "admin") {
+                     botonesAccion = `
+                       <div style="display:flex; gap:10px; justify-content:flex-end;">
+                         <button onclick="prepararEdicion('${ev.id}', '${ev.nombre}', '${ev.tipo}', '${ev.cupoMax}', '${ev.responsable}', '${ev.isoInicio}', '${ev.isoFin}')" title="Editar" style="background:none; border:none; cursor:pointer; font-size:1.1rem;">✏️</button>
+                         <button onclick="confirmarEliminar('${ev.id}')" title="Eliminar" style="background:none; border:none; cursor:pointer; font-size:1.1rem;">🗑️</button>
+                         <button onclick="irANotas('${ev.id}')" title="Notas" style="background:none; border:none; cursor:pointer; font-size:1.1rem;">📝</button>
+                       </div>`;
+                  } else if (user.rol === "docente") {
+                     botonesAccion = `
+                       <div style="display:flex; gap:10px; justify-content:flex-end;">
+                         <button onclick="irANotas('${ev.id}')" title="Notas" style="background:none; border:none; cursor:pointer; font-size:1.1rem; color:white;">📝</button>
+                       </div>`;
+                  }
+
+                  return `
+                  <tr style="border-bottom:1px solid #334155;">
+                    <td style="padding:15px;">
+                        <div onclick="abrirAsist('${ev.id}', '${ev.nombre}')" style="font-weight:bold; cursor:pointer; color:#f8fafc; display:flex; align-items:center; gap:8px;">
+                           ${ev.nombre} 
+                           <span style="font-size:0.7rem; background:#3b82f6; padding:2px 6px; border-radius:4px;">Ver</span>
+                        </div>
+                    </td>
+                    <td style="padding:15px; color:#94a3b8;">${ev.tipo}</td>
+                    <td style="padding:15px; font-size:0.85rem; color:#cbd5e1;">
+                       📅 ${ev.fecha} <br> ⏰ ${ev.horaInicio} - ${ev.horaFin}
+                    </td>
+                    <td style="padding:15px; text-align:center;">
+                       <span style="font-weight:bold; color:${disponibles <= 0 ? '#ef4444' : '#10b981'}">${ev.inscritos} / ${ev.cupoMax}</span>
+                       <div style="width:100%; height:4px; background:#334155; margin-top:5px; border-radius:2px;">
+                          <div style="width:${porcentaje > 100 ? 100 : porcentaje}%; height:100%; background:${disponibles <= 0 ? '#ef4444' : '#10b981'}; border-radius:2px;"></div>
+                       </div>
+                    </td>
+                    <td style="padding:15px; font-size:0.85rem;">${ev.responsable}</td>
+                    <td style="padding:15px;">${botonesAccion}</td>
+                  </tr>
+                  `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      }
+
+  }).getEventos(user.email, user.rol);
+}
+
+  function irACrearEvento() {
+    resetFormEvento();
+    ocultarSecciones();
+    document.getElementById('crear-evento-section').classList.remove('hidden');
+  }
+
+  function prepararEdicion(id, nombre, tipo, cupo, responsable, inicio, fin) {
+    editMode = true;
+    currentEditId = id;
+    ocultarSecciones();
+    document.getElementById('crear-evento-section').classList.remove('hidden');
+    
+    document.querySelector('#crear-evento-section h2').innerText = "Editar Evento";
+    document.getElementById('ev-nombre').value = nombre;
+    document.getElementById('ev-tipo').value = tipo;
+    document.getElementById('ev-cupo').value = cupo;
+    document.getElementById('ev-responsable').value = responsable;
+    document.getElementById('ev-inicio').value = inicio;
+    document.getElementById('ev-fin').value = fin;
+    document.getElementById('btn-guardar-ev').innerText = "Actualizar Cambios";
+  }
+
+  function validarCamposObligatorios(campos) {
+    let errores = 0;
+    campos.forEach(c => {
+      const el = document.getElementById(c.id);
+      if(!el) return;
+      
+      // Limpiar error previo
+      el.classList.remove('input-error');
+      
+      let valido = true;
+      const valor = el.value.trim();
+      
+      if (c.tipo === 'text' || c.tipo === 'number' || c.tipo === 'date' || c.tipo === 'password' || c.tipo === 'datetime-local') {
+         if(valor === "") valido = false;
+      } else if (c.tipo === 'email') {
+         // Regex simple para email
+         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+         if(!emailRegex.test(valor)) valido = false;
+      }
+      
+      if(!valido) {
+        el.classList.add('input-error');
+        // Quitar error al escribir
+        el.addEventListener('input', function() { this.classList.remove('input-error'); }, {once:true});
+        errores++;
+      }
+    });
+    
+    if(errores > 0) {
+      showToast("Atención", "Por favor completa los campos obligatorios marcados en rojo.", "warning");
+      return false;
+    }
+    return true;
+  }
+
+  function guardarEventoNuevo() {
+    // 1. Validar campos
+    const campos = [
+      {id:'ev-nombre', tipo:'text'},
+      {id:'ev-inicio', tipo:'datetime-local'},
+      {id:'ev-fin', tipo:'datetime-local'},
+      {id:'ev-cupo', tipo:'number'},
+      {id:'ev-responsable', tipo:'email'}
+    ];
+    
+    if(!validarCamposObligatorios(campos)) return;
+
+    const datos = {
+      id: currentEditId,
+      nombre: document.getElementById('ev-nombre').value,
+      inicio: document.getElementById('ev-inicio').value,
+      fin: document.getElementById('ev-fin').value,
+      tipo: document.getElementById('ev-tipo').value,
+      cupo: document.getElementById('ev-cupo').value,
+      responsable: document.getElementById('ev-responsable').value,
+      usuarioActor: user.email
+    };
+
+    const accionDesc = editMode ? "Editó el evento: " : "Creó el evento: ";
+
+    google.script.run.withSuccessHandler(res => {
+      if(res.success) {
+        google.script.run.registrarLog(user.email, editMode ? "Editar" : "Crear", "Eventos", accionDesc + datos.nombre);
+        showToast("Éxito", res.message, "success");
+        irAEventos();
+      }
+    })[editMode ? 'editarEventoServidor' : 'crearEventoServidor'](datos);
+  }
+
+  function confirmarEliminar(id) {
+    if(confirm("¿Seguro que deseas eliminar este evento?")) {
+      google.script.run.withSuccessHandler(() => {
+        google.script.run.registrarLog(user.email, "Eliminar", "Eventos", "Eliminó el evento con ID: " + id);
+        irAEventos();
+      }).eliminarEventoServidor(id);
+    }
+  }
+
+  function resetFormEvento() {
+    editMode = false;
+    currentEditId = null;
+    document.querySelector('#crear-evento-section h2').innerText = "Configurar Nuevo Evento";
+    document.getElementById('btn-guardar-ev').innerText = "Crear Evento";
+    document.getElementById('ev-nombre').value = "";
+    document.getElementById('ev-inicio').value = "";
+    document.getElementById('ev-fin').value = "";
+    document.getElementById('ev-cupo').value = "";
+    document.getElementById('ev-responsable').value = "";
+  }
+
+  // --- INSCRIPCIÓN Y ASISTENCIA ---
+  function guardarNuevoParticipante() {
+    if(!validarCamposObligatorios([
+      {id:'p-nombre', tipo:'text'},
+      {id:'p-correo', tipo:'email'}
+    ])) return;
+
+    const datos = {
+      nombre: document.getElementById('p-nombre').value,
+      correo: document.getElementById('p-correo').value,
+      idEvento: document.getElementById('p-evento-select').value,
+      usuarioActor: user.email
+    };
+    google.script.run.withSuccessHandler(res => {
+      if(res.success) {
+        showToast("Éxito", res.message, "success");
+        irAEventos();
+      } else {
+        showToast("Error", res.message, "error");
+      }
+    }).agregarParticipante(datos, user.rol);
+  }
+
+  // --- SWITCHES CON ESTADO VISUAL (MODIFICADO) ---
+  // --- VARIABLES GLOBALES EXTRA ---
+  let fechaSesionActual = new Date().toISOString().split('T')[0]; // YYYY-MM-DD Hoy
+
+  // Reemplaza la función abrirAsist y guardarAsistencia con estas nuevas versiones:
+
+  function abrirAsist(id, nom) {
+    currentEv = id;
+    ocultarSecciones();
+    document.getElementById('asistencia-panel').classList.remove('hidden');
+    document.getElementById('evento-titulo').innerText = nom;
+    
+    // Setear fecha hoy por defecto en el input
+    document.getElementById('fecha-sesion-asist').value = fechaSesionActual;
+    
+    cargarAsistenciaDelDia();
+  }
+function cargarAsistenciaDelDia() {
+  const fechaInput = document.getElementById('fecha-sesion-asist');
+  // Usamos la fecha del input o la de hoy si está vacío
+  let fechaSesionActual = fechaInput ? fechaInput.value : new Date().toISOString().split('T')[0];
+
+  const tbody = document.getElementById('lista-alumnos');
+  const btnGuardar = document.querySelector('#asistencia-panel button.btn-p'); // Ajusta selector si es necesario
+
+  if(tbody) tbody.innerHTML = "<tr><td colspan='2' style='text-align:center; padding:20px; color:#94a3b8;'>Cargando lista...</td></tr>";
+
+  google.script.run.withSuccessHandler(res => {
+    const alumnos = res.participantes; // Array de alumnos
+    const estaBloqueado = res.bloqueado; // Estado del curso
+
+    // Manejo visual del botón de guardar/bloqueo
+    if (btnGuardar) {
+        if (estaBloqueado) {
+          btnGuardar.disabled = true;
+          btnGuardar.innerText = "🔒 Cerrado";
+          btnGuardar.style.background = "#94a3b8";
+        } else {
+          btnGuardar.disabled = false;
+          btnGuardar.innerText = "💾 Guardar Cambios";
+          btnGuardar.style.background = "";
+        }
+    }
+
+    if(!alumnos || alumnos.length === 0) {
+       if(tbody) tbody.innerHTML = "<tr><td colspan='2' style='padding:20px; text-align:center;'>Sin alumnos inscritos.</td></tr>";
+       return;
+    }
+
+    // Generar las filas de la tabla
+    const htmlFilas = alumnos.map(a => {
+      // Definir colores y estados iniciales según BD
+      let colorTexto = '#94a3b8'; // Ausente (Gris)
+      let isChecked = false;
+      
+      if(a.estado === 'Presente') {
+          colorTexto = '#10b981'; // Verde
+          isChecked = true;
+      } else if(a.estado === 'Justificado') {
+          colorTexto = '#f59e0b'; // Amarillo/Ambar
+          isChecked = false; 
+      }
+
+      const disabledAttr = estaBloqueado ? 'disabled' : '';
+      const opacity = estaBloqueado ? '0.7' : '1';
+
+      // Retornamos el HTML de la fila
+      return `
+      <tr style="border-bottom: 1px solid #334155;">
+        <td style="padding:15px;">
+          <div style="display:flex; align-items:center; gap:15px;">
+              <button onclick="verQR('${a.id}', '${currentEv}', '${a.nombre}')" 
+                      style="background:#e0f2fe; border:none; border-radius:50%; width:40px; height:40px; cursor:pointer; font-size:1.2rem;">
+                  🎟️
+              </button>
+              <div>
+                  <div onclick="verKardex('${a.id}')" 
+                       title="Ver historial"
+                       style="font-weight:bold; color:#f8fafc; cursor:pointer; text-decoration:underline; text-decoration-style:dotted;">
+                       ${a.nombre}
+                  </div>
+                  
+                  <div style="font-size:0.75rem; color:#64748b;">
+                     📅 Historial: <span style="color:#e2e8f0;">${a.conteo || 0}</span> sesiones ok
+                  </div>
+              </div>
+          </div>
+        </td>
+
+        <td style="text-align:right; padding:15px;">
+          <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px; opacity:${opacity}">
+              
+              <button onclick="marcarJustificado('${a.id}')" 
+                      ${disabledAttr}
+                      title="Justificar Inasistencia"
+                      style="background:#fef3c7; border:1px solid #fcd34d; border-radius:8px; width:35px; height:35px; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; margin-right:5px;">
+                  💊
+              </button>
+
+              <span id="label-${a.id}" 
+                    data-estado="${a.estado}" 
+                    style="font-size:0.8rem; font-weight:bold; color:${colorTexto}; min-width:75px; text-align:right;">
+                 ${a.estado}
+              </span>
+              
+              <label class="switch">
+                <input type="checkbox" id="check-${a.id}" 
+                       ${isChecked ? 'checked' : ''} 
+                       ${disabledAttr}
+                       onchange="cambiarEstadoSwitch('${a.id}')">
+                <span class="slider"></span>
+              </label>
+          </div>
+        </td>
+      </tr>
+    `}).join('');
+    
+    // Insertar HTML en la tabla
+    if(tbody) tbody.innerHTML = htmlFilas;
+
+    // --- AQUÍ ESTÁ EL CAMBIO CLAVE ---
+    // Actualizamos el contador apenas se cargan los datos
+    if (typeof actualizarContadorDesdeDatos === 'function') {
+        actualizarContadorDesdeDatos(alumnos);
+    }
+
+  }).getParticipantesConEstado(currentEv, fechaSesionActual || new Date());
+}
+
+// --- NUEVA FUNCIÓN: VER QR MANUALMENTE ---
+function verQR(idParticipante, idEvento, nombre) {
+  // 1. Crear el string de datos (Formato: ID_PART|ID_EVENTO)
+  const qrData = idParticipante + "|" + idEvento;
+  
+  // 2. Generar URL de la imagen usando QuickChart API
+  const qrUrl = "https://quickchart.io/qr?text=" + encodeURIComponent(qrData) + "&size=300&dark=0f172a&ecLevel=H";
+
+  // 3. Obtener el modal genérico "custom-modal"
+  const modal = document.getElementById('custom-modal');
+  
+  // 4. Configurar Títulos e Icono
+  document.getElementById('modal-title').innerText = "Código de Acceso";
+  document.getElementById('modal-icon').innerText = "🎟️"; 
+  
+  // 5. Inyectar HTML con la imagen y el nombre
+  document.getElementById('modal-message').innerHTML = `
+      <div style="text-align:center;">
+          <p style="margin-bottom:15px; color:#cbd5e1;">Participante: <strong style="color:white; font-size:1.1rem;">${nombre}</strong></p>
+          
+          <div style="background:white; padding:15px; border-radius:12px; display:inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+              <img src="${qrUrl}" alt="QR Code" style="width:220px; height:220px; display:block;">
+          </div>
+          
+          <p style="font-size:0.85rem; margin-top:20px; color:#94a3b8; background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
+              💡 Si el alumno no tiene su teléfono, escanea este código directamente desde tu pantalla.
+          </p>
+      </div>
+  `;
+
+  // 6. Configurar botón de cerrar
+  document.getElementById('modal-actions').innerHTML = `
+      <button onclick="document.getElementById('custom-modal').classList.add('hidden')" class="btn-p">Cerrar Ventana</button>
+  `;
+
+  // 7. Mostrar modal
+  modal.classList.remove('hidden');
+}
+
+  // Nueva función auxiliar para cambiar el texto al hacer clic
+  function toggleStatusLabel(checkbox, labelId) {
+    const label = document.getElementById(labelId);
+    if(checkbox.checked) {
+       label.innerText = "Presente";
+       label.style.color = "#10b981"; // Verde
+    } else {
+       label.innerText = "Ausente";
+       label.style.color = "#94a3b8"; // Gris
+    }
+  }
+
+  function guardarAsistencia() {
+    const checks = document.querySelectorAll('input[id^="check-"]'); // Tomamos todos (checked y unchecked)
+    
+    // Filtramos solo los checked para enviar "Presente"
+    const data = Array.from(checks).filter(c => c.checked).map(c => ({ 
+      idParticipante: c.id.replace('check-',''), 
+      estado: "Presente" 
+    }));
+    
+    // Enviamos la fecha seleccionada al backend
+    const fechaElegida = document.getElementById('fecha-sesion-asist').value;
+
+    google.script.run.withSuccessHandler(res => {
+      google.script.run.registrarLog(user.email, "Asistencia", "Pasar Lista", `Asistencia guardada para ${fechaElegida}`);
+      showModal({ title: "Guardado", message: res.message, type: "success" });
+      
+      // Recargamos la lista para actualizar los contadores acumulados
+      cargarAsistenciaDelDia();
+      
+    }).registrarAsistencia(currentEv, data, user.email, fechaElegida);
+  }
+
+  function showModal({ title, message, type, confirmText, cancelText, onConfirm, onCancel }) {
+    const modal = document.getElementById('custom-modal');
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-message').innerText = message;
+    
+    // Icono según tipo
+    const iconEl = document.getElementById('modal-icon');
+    if (type === 'success') iconEl.innerText = '✅';
+    else if (type === 'error') iconEl.innerText = '❌';
+    else if (type === 'warning') iconEl.innerText = '⚠️';
+    else iconEl.innerText = 'ℹ️';
+
+    const actionsContainer = document.getElementById('modal-actions');
+    actionsContainer.innerHTML = '';
+
+    if (onConfirm) {
+      // Caso: Diálogo de Confirmación
+      const btnCancel = document.createElement('button');
+      btnCancel.innerText = cancelText || "Cancelar";
+      btnCancel.className = "btn-back";
+      btnCancel.style.margin = "0";
+      btnCancel.onclick = () => {
+        modal.classList.add('hidden');
+        if (onCancel) onCancel();
+      };
+
+      const btnConfirm = document.createElement('button');
+      btnConfirm.innerText = confirmText || "Aceptar";
+      btnConfirm.className = "btn-p";
+      btnConfirm.style.margin = "0";
+      btnConfirm.onclick = () => {
+        modal.classList.add('hidden');
+        onConfirm();
+      };
+
+      actionsContainer.appendChild(btnCancel);
+      actionsContainer.appendChild(btnConfirm);
+    } else {
+      // Caso: Aviso Simple
+      const btnOk = document.createElement('button');
+      btnOk.innerText = "Aceptar";
+      btnOk.className = "btn-p";
+      btnOk.style.margin = "0";
+      btnOk.onclick = () => modal.classList.add('hidden');
+      actionsContainer.appendChild(btnOk);
+    }
+
+    modal.classList.remove('hidden');
+  }
+
+  function logout() { 
+    if(user && user.email) {
+       google.script.run.registrarLog(user.email, "Logout", "Seguridad", "Cierre de sesión manual");
+    }
+    localStorage.removeItem('sesion_usuario');
+    
+    user = null;
+    currentEv = null;
+    document.getElementById('email').value = "";
+    document.getElementById('pass').value = "";
+    document.getElementById('main-screen').classList.add('hidden');
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('btn-admin-config').classList.add('hidden');
+    document.getElementById('btn-usuarios-config').classList.add('hidden');
+    document.getElementById('btn-logs').classList.add('hidden');
+    document.getElementById('btn-stats').classList.add('hidden');
+  }
+
+  function togglePass() { 
+    const p = document.getElementById('pass'); 
+    p.type = p.type === 'password' ? 'text' : 'password';
+  }
+
+  function irAGestion() {
+    ocultarSecciones();
+    document.getElementById('gestion-participantes').classList.remove('hidden');
+    google.script.run.withSuccessHandler(evs => {
+      document.getElementById('p-evento-select').innerHTML = evs.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+    }).getEventos(user.email, user.rol);
+  }
+
+  function irAMiHorario() {
+    ocultarSecciones();
+    document.getElementById('horario-section').classList.remove('hidden');
+    const lista = document.getElementById('lista-horario');
+    lista.innerHTML = "<tr><td colspan='3'>Cargando tu agenda...</td></tr>";
+    
+    // AUDITORÍA CLIENTE (Opcional, pero mejor en backend)
+    google.script.run.registrarLog(user.email, "Navegación", "Mi Horario", "Usuario consultó su agenda personal");
+    
+    google.script.run.withSuccessHandler(clases => {
+      if (clases.length === 0) {
+        lista.innerHTML = "<tr><td colspan='3' style='text-align:center'>Aún no tienes talleres registrados.</td></tr>";
+        return;
+      }
+
+      lista.innerHTML = clases.map(c => `
+        <tr>
+          <td><strong>${c.nombre}</strong></td>
+          <td><small class="cupo-badge badge-ok">${c.tipo}</small></td>
+          <td style="font-size: 0.85rem; color: var(--text-muted);">
+            ${c.inicio} <br> al <br> ${c.fin}
+          </td>
+        </tr>
+      `).join('');
+    }).getMiHorario(user.email);
+  }
+
+  // GESTIÓN DE USUARIOS
+  function irAGestionUsuarios() {
+    ocultarSecciones();
+    document.getElementById('usuarios-section').classList.remove('hidden');
+    cargarUsuarios();
+  }
+
+  function cargarUsuarios() {
+    const body = document.getElementById('lista-usuarios-body');
+    body.innerHTML = "<tr><td colspan='3'>Cargando usuarios...</td></tr>";
+    google.script.run.withSuccessHandler(users => {
+      body.innerHTML = users.map(u => `
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding:10px;"><strong>${u.nombre}</strong></td>
+          <td>${u.email} <br> <small style="color:var(--blue)">${u.rol.toUpperCase()}</small></td>
+          <td style="text-align:right">
+            <button onclick="editarUser('${u.nombre}','${u.email}','${u.pass}','${u.rol}')" style="background:none; border:none; cursor:pointer;">✏️</button>
+            <button onclick="confirmarEliminarUser('${u.email}')" style="background:none; border:none; cursor:pointer;">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    }).getUsuariosServidor();
+  }
+
+  function abrirModalUsuario() {
+    document.getElementById('u-email').disabled = false;
+    document.getElementById('modal-usuario').classList.remove('hidden');
+  }
+
+  function editarUser(nom, email, pass, rol) {
+    document.getElementById('u-nombre').value = nom;
+    document.getElementById('u-email').value = email;
+    document.getElementById('u-email').disabled = true; 
+    document.getElementById('u-pass').value = pass;
+    document.getElementById('u-rol').value = rol;
+    document.getElementById('titulo-modal-u').innerText = "Editar Usuario";
+    document.getElementById('modal-usuario').classList.remove('hidden');
+  }
+
+
+
+
+
+  function cerrarModalUsuario() {
+    document.getElementById('modal-usuario').classList.add('hidden');
+    document.querySelectorAll('#modal-usuario input').forEach(i => i.value = "");
+  }
+
+  // AUDITORÍA / LOGS
+
+
+  function filtrarTabla(tbodyId, query) {
+    const lquery = query.toLowerCase();
+    const filas = document.getElementById(tbodyId).getElementsByTagName('tr');
+    for (let fila of filas) {
+      const textoFila = fila.innerText.toLowerCase();
+      fila.style.display = textoFila.includes(lquery) ? "" : "none";
+    }
+  }
+
+  function filtrarLogs(valor) {
+    const query = valor.toLowerCase();
+    const filas = document.getElementById('lista-logs-body').getElementsByTagName('tr');
+    for (let i = 0; i < filas.length; i++) {
+      const textoFila = filas[i].innerText.toLowerCase();
+      filas[i].style.display = textoFila.includes(query) ? "" : "none";
+    }
+  }
+
+
+
+  // --- ESTADÍSTICAS AVANZADAS ---
+  let miGrafica;
+
+
+
+  function cargarEstadisticas() {
+    // 1. Leer Filtros
+    const docente = document.getElementById('stat-filter-docente').value;
+    const inicio = document.getElementById('stat-filter-inicio').value;
+    const fin = document.getElementById('stat-filter-fin').value;
+
+    // Indicador visual de carga en un KPI
+    document.getElementById('kpi-talleres').innerText = "...";
+
+    google.script.run.withSuccessHandler(res => {
+      // 2. Actualizar KPIs
+      document.getElementById('kpi-talleres').innerText = res.kpis.totalTalleres;
+      document.getElementById('kpi-inscritos').innerText = res.kpis.totalInscritos;
+      document.getElementById('kpi-tasa').innerText = res.kpis.tasaAsistencia + "%";
+      document.getElementById('kpi-ocupacion').innerText = res.kpis.ocupacionGlobal + "%";
+
+      // 3. Llenar Select de Docentes (solo si está vacío para no reiniciar selección)
+      const selectDoc = document.getElementById('stat-filter-docente');
+      if (selectDoc.options.length <= 1) {
+        res.listaDocentes.forEach(d => {
+          if(d) {
+             const opt = document.createElement('option');
+             opt.value = d;
+             opt.innerText = d;
+             selectDoc.appendChild(opt);
+          }
+        });
+      }
+
+      // 4. Configurar Gráfica Chart.js (Stacked Bar)
+      const ctx = document.getElementById('chartTalleres').getContext('2d');
+      if (miGrafica) miGrafica.destroy();
+
+      miGrafica = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: res.labels,
+          datasets: [
+            {
+              label: 'Asistieron (Presente)',
+              data: res.asistieron,
+              backgroundColor: '#10b981', // Verde
+              borderRadius: 4
+            },
+            {
+              label: 'Ausentes / Sin Registro',
+              data: res.ausentes,
+              backgroundColor: '#ef4444', // Rojo
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#e2e8f0' } },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+            }
+          },
+          scales: {
+            x: {
+              stacked: true, // ¡Clave para que se apilen!
+              grid: { display: false },
+              ticks: { color: '#94a3b8' }
+            },
+            y: {
+              stacked: true, // ¡Clave para que se apilen!
+              beginAtZero: true,
+              grid: { color: '#334155' },
+              ticks: { color: '#94a3b8' }
+            }
+          }
+        }
+      });
+    }).getEstadisticasAvanzadas(docente, inicio, fin);
+  }
+
+  function limpiarFiltrosStats() {
+    document.getElementById('stat-filter-docente').value = "";
+    document.getElementById('stat-filter-inicio').value = "";
+    document.getElementById('stat-filter-fin').value = "";
+    cargarEstadisticas();
+  }
+  // --- FUNCIONES PARA REPORTE DE MATRIZ ---
+  
+  function abrirReporteMatriz() {
+    const modal = document.getElementById('modal-reporte');
+    const tabla = document.getElementById('tabla-reporte-matriz');
+    
+    // Mostrar modal y loading
+    modal.classList.remove('hidden');
+    tabla.innerHTML = "<tr><td style='padding:20px;'>Cargando historial completo...</td></tr>";
+
+    google.script.run.withSuccessHandler(res => {
+      construirTablaMatriz(res);
+    }).getReporteMatriz(currentEv);
+  }
+
+  function construirTablaMatriz(res) {
+    const tabla = document.getElementById('tabla-reporte-matriz');
+    if (!document.getElementById('btn-pdf-descarga')) {
+     tabla.insertAdjacentHTML('beforebegin', `
+       <div style="text-align: right; margin-bottom: 10px;">
+          <button id="btn-pdf-descarga" onclick="descargarPDF()" class="btn-pdf">
+            ⬇ Descargar PDF
+          </button>
+       </div>
+     `);
+  }
+    const fechas = res.fechas;
+    const alumnos = res.data;
+
+    if (fechas.length === 0) {
+      tabla.innerHTML = "<tr><td style='padding:20px;'>No se ha tomado asistencia en ninguna fecha aún.</td></tr>";
+      return;
+    }
+
+    // 1. Construir Cabecera (Fechas)
+    let html = `<thead><tr><th style="min-width:150px;">Alumno / Fecha</th>`;
+    fechas.forEach(f => {
+      // Convertir 2024-01-20 a 20/01 para que ocupe menos espacio
+      const partes = f.split('-');
+      const fechaCorta = `${partes[2]}/${partes[1]}`;
+      html += `<th>${fechaCorta}</th>`;
+    });
+    html += `<th style="background:#2563eb;">% Asist.</th></tr></thead>`;
+
+    // 2. Construir Cuerpo (Alumnos)
+    html += `<tbody>`;
+    alumnos.forEach(alumno => {
+      let fila = `<tr><td>${alumno.nombre}</td>`;
+      let contadorAsistencias = 0;
+
+      fechas.forEach(fecha => {
+        const asistio = alumno.asistencias[fecha];
+        if(asistio) {
+          fila += `<td><span class="mark-present">✔</span></td>`;
+          contadorAsistencias++;
+        } else {
+          fila += `<td><span class="mark-absent">✖</span></td>`;
+        }
+      });
+      
+      // Calcular porcentaje final
+      const porcentaje = Math.round((contadorAsistencias / fechas.length) * 100);
+      let colorPorcentaje = porcentaje < 50 ? '#ef4444' : (porcentaje < 80 ? '#f59e0b' : '#10b981');
+      
+      fila += `<td style="font-weight:bold; color:${colorPorcentaje}">${porcentaje}%</td></tr>`;
+      html += fila;
+    });
+    html += `</tbody>`;
+
+    tabla.innerHTML = html;
+  }
+  // --- LÓGICA DE CÓDIGOS QR ---
+  let html5QrcodeScanner = null; // Variable global para el escáner
+
+  function iniciarEscaner() {
+    document.getElementById('modal-scanner').classList.remove('hidden');
+    document.getElementById('scan-result').innerHTML = "Esperando código QR...";
+    
+    // Configuración del escáner
+    if(!html5QrcodeScanner) {
+      html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", 
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        /* verbose= */ false
+      );
+      html5QrcodeScanner.render(onScanSuccess, (errorMessage) => {
+        // parse error, ignore it.
+      });
+    }
+  }
+
+  function detenerEscaner() {
+    if (html5QrcodeScanner) {
+      try {
+        html5QrcodeScanner.clear().then(() => {
+          document.getElementById('modal-scanner').classList.add('hidden');
+          html5QrcodeScanner = null; // Limpiar instancia para reiniciar limpio la próxima
+        });
+      } catch(e) {
+        document.getElementById('modal-scanner').classList.add('hidden');
+      }
+    } else {
+      document.getElementById('modal-scanner').classList.add('hidden');
+    }
+  }
+  // --- LÓGICA DE CARGA MASIVA ---
+
+function abrirModalCarga() {
+  // Validar que se haya seleccionado un evento primero
+  const idEvento = document.getElementById('p-evento-select').value;
+  if (!idEvento) {
+    showModal({ title: "Atención", message: "Primero selecciona un Taller en la lista desplegable.", type: "error" });
+    return;
+  }
+  
+  // Limpiar inputs
+  document.getElementById('archivo-csv').value = "";
+  document.getElementById('preview-csv').style.display = "none";
+  document.getElementById('preview-csv').innerHTML = "";
+  
+  // Mostrar modal
+  document.getElementById('modal-carga').classList.remove('hidden');
+}
+
+function procesarArchivo() {
+  const input = document.getElementById('archivo-csv');
+  const idEvento = document.getElementById('p-evento-select').value;
+  
+  if (!input.files || input.files.length === 0) {
+    showToast("Atención", "Por favor selecciona un archivo CSV.", "warning");
+    return;
+  }
+
+  const archivo = input.files[0];
+  const lector = new FileReader();
+
+  lector.onload = function(e) {
+    const texto = e.target.result;
+    const listaAlumnos = csvAJson(texto);
+    
+    if (listaAlumnos.length === 0) {
+      showToast("Error", "No se encontraron datos válidos o el formato es incorrecto.", "error");
+      return;
+    }
+
+    if (confirm(`Se detectaron ${listaAlumnos.length} alumnos. ¿Deseas proceder con la inscripción?`)) {
+      enviarAlBackend(idEvento, listaAlumnos);
+    }
+  };
+
+  lector.readAsText(archivo);
+}
+
+// Convertir CSV texto a Objeto JS
+function csvAJson(csv) {
+  const lineas = csv.split(/\r\n|\n/);
+  const resultado = [];
+  
+  // Recorrer líneas
+  for (let i = 0; i < lineas.length; i++) {
+    const linea = lineas[i].trim();
+    if (!linea) continue; // Saltar vacíos
+    
+    // Separar por comas (o punto y coma si el excel es en español)
+    // Detectamos si usa ; o ,
+    const separador = linea.includes(';') ? ';' : ',';
+    const partes = linea.split(separador);
+    
+    if (partes.length >= 2) {
+      const nombre = partes[0].trim();
+      const correo = partes[1].trim();
+      
+      // Ignorar cabeceras si dicen "Nombre" o "Correo"
+      if (nombre.toLowerCase() === "nombre" || correo.toLowerCase().includes("correo")) continue;
+      
+      if (nombre && correo && correo.includes('@')) {
+        resultado.push({ nombre: nombre, correo: correo });
+      }
+    }
+  }
+  return resultado;
+}
+
+function enviarAlBackend(idEvento, lista) {
+  // Feedback visual
+  const btn = document.querySelector('#modal-carga .btn-p');
+  const textoOriginal = btn.innerText;
+  btn.innerText = "⏳ Procesando...";
+  btn.disabled = true;
+
+  google.script.run.withSuccessHandler(res => {
+    btn.innerText = textoOriginal;
+    btn.disabled = false;
+    document.getElementById('modal-carga').classList.add('hidden');
+    
+    showModal({ 
+      title: res.success ? "Carga Finalizada" : "Error", 
+      message: res.message, 
+      type: res.success ? "success" : "error" 
+    });
+
+  }).procesarCargaMasiva(idEvento, lista);
+}
+// --- LÓGICA DE CALIFICACIONES (GRADEBOOK) ---
+
+function irANotas(idEvento) {
+  currentEv = idEvento; // Guardamos ID global
+  ocultarSecciones();
+  document.getElementById('notas-section').classList.remove('hidden');
+  cargarGradebook();
+}
+
+// --- CARGAR GRADEBOOK (VERSIÓN FINAL: MÓVIL + ALINEACIÓN + VISTA PREVIA) ---
+function cargarGradebook() {
+  // Intentamos obtener la tabla, o buscarla dentro del contenedor si ya se creó
+  let tabla = document.getElementById('tabla-notas');
+  
+  // Si no existe la tabla (quizás se borró al renderizar), buscamos el contenedor
+  if (!tabla) {
+     const wrapper = document.querySelector('.table-responsive');
+     if(wrapper) {
+         wrapper.innerHTML = `<table id="tabla-notas" style="width:100%; border-collapse:collapse; min-width:800px;"><tr><td style="color:white; padding:20px; text-align:center;">🔄 Cargando...</td></tr></table>`;
+         tabla = document.getElementById('tabla-notas');
+     }
+  }
+
+  if(tabla) tabla.innerHTML = "<tr><td colspan='12' style='padding:20px; text-align:center; color:white; font-size:1.2rem;'>🔄 Cargando libro...</td></tr>";
+
+  // Limpiar toolbar anterior
+  const toolbarVieja = document.getElementById('gradebook-toolbar');
+  if(toolbarVieja) toolbarVieja.remove();
+
+  // Toolbar
+  const toolbarHTML = `
+    <div id="gradebook-toolbar" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; margin-bottom:15px; padding:0 5px;">
+       <h3 style="margin:0; color:#94a3b8; font-size:0.9rem;">Gestión de Notas</h3>
+       <div style="display:flex; gap:10px; align-items:center;">
+          <button onclick="verTendenciasCurso()" class="btn-alt" style="background:#4f46e5; border:1px solid #4338ca; color:white; padding: 8px 15px; font-size: 0.85rem;">📈 Tendencias</button>
+          <button onclick="generarReportePDF()" class="btn-alt" style="background:#ef4444; border:1px solid #b91c1c; color:white; padding: 8px 15px; font-size: 0.85rem;">📄 Reporte PDF</button>
+          <button onclick="verAnalisisCurso()" class="btn-alt" style="background:#1e3a8a; border:1px solid #172554; color:white; padding: 8px 15px; font-size: 0.85rem;">📊 Análisis</button>
+          <button onclick="abrirModalAnuncio()" class="btn-alt" style="background:#f59e0b; border:1px solid #d97706; color:white; padding: 8px 15px; font-size: 0.85rem;">📢 Avisos</button>
+          <button onclick="abrirModalTarea()" class="btn-p" style="padding: 8px 15px; font-size: 0.85rem;">➕ Actividad</button>
+       </div>
+    </div>`;
+  
+  // Insertar toolbar antes de la tabla (o del wrapper si existe)
+  const nodoReferencia = document.querySelector('.table-responsive') || tabla;
+  if(nodoReferencia) nodoReferencia.insertAdjacentHTML('beforebegin', toolbarHTML);
+
+  google.script.run
+    .withFailureHandler(err => { 
+        if(tabla) tabla.innerHTML = `<tr><td colspan='12' style='padding:20px; text-align:center; color:#ef4444;'>❌ Error: ${err.message}</td></tr>`; 
+    })
+    .withSuccessHandler(res => {
+      if (!res || !res.actividades) { 
+          if(tabla) tabla.innerHTML = "<tr><td colspan='12' style='color:white;'>⚠️ Sin datos.</td></tr>"; 
+          return; 
+      }
+      
+      window.datosReporteActual = res; 
+      const acts = res.actividades;
+      const alumnos = res.alumnos;
+
+      // ENCABEZADO
+      let header = `<thead style="background:#1e293b !important; color:#ffffff !important;"><tr>
+        <th style="padding:12px; text-align:center; width:40px;"><input type="checkbox" onchange="toggleTodos(this)"></th>
+        <th style="padding:12px; text-align:left; color:#ffffff !important;">Alumno</th>
+        <th style="padding:12px; text-align:center; color:#ffffff !important;">Asistencia</th>`;
+      
+      acts.forEach(a => {
+        header += `<th style="padding:8px; text-align:center; min-width:110px; color:#ffffff !important; border-bottom:1px solid #334155; vertical-align:top;">
+                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <span style="font-size:0.85rem; font-weight:bold; margin-right:5px;">${a.nombre}</span>
+                        <div style="background:white; border-radius:10px; padding:2px 5px; display:flex; gap:5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                           <span onclick="prepararEdicionTarea('${a.id}', '${a.nombre}', '${a.peso}')" title="Editar" style="cursor:pointer; font-size:0.9rem;">✏️</span>
+                           <span onclick="borrarTarea('${a.id}')" title="Borrar" style="cursor:pointer; font-size:0.9rem;">🗑️</span>
+                        </div>
+                     </div>
+                     <small style="color:#cbd5e1; background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px;">${a.peso}%</small>
+                   </th>`;
+      });
+
+      header += `<th style="padding:12px; text-align:center; color:#ffffff !important;">Promedio</th><th style="padding:12px; text-align:center; color:#ffffff !important;">Estado</th><th style="padding:12px; text-align:right; padding-right:30px; color:#ffffff !important;">Acciones</th></tr></thead><tbody>`;
+
+      let body = "";
+      if(alumnos.length === 0) { 
+          body = "<tr><td colspan='12' style='color:white; text-align:center; padding:20px;'>📭 Sin alumnos.</td></tr>"; 
+      } else {
+          body = alumnos.map(alum => {
+            const colorAsist = alum.asistencia >= 70 ? '#4ade80' : '#f87171';
+            let colorEstado = "#ef4444"; if(alum.estado === "APROBADO") colorEstado = "#10b981"; else if (alum.estado === "RECUPERACION") colorEstado = "#f59e0b";
+
+            let celdasNotas = "";
+            acts.forEach(a => {
+              celdasNotas += `<td style="text-align:center; border-bottom:1px solid #334155;">
+                <input type="number" value="${alum.notas[a.id] || ''}" step="0.1" min="0" max="10"
+                       onchange="guardarNotaCambio('${a.id}', '${alum.id}', this.value)"
+                       style="width:50px; padding:4px; text-align:center; background:#0f172a; color:#ffffff; border:1px solid #475569; border-radius:4px;">
+              </td>`;
+            });
+
+            // BOTONES DE ACCIÓN
+            const btnBoleta = `<button onclick="generarBoletaIndividual('${alum.id}')" title="Descargar Boleta" style="background:none; border:none; cursor:pointer; font-size:1.1rem; padding:5px;">🖨️</button>`;
+            
+            let grupoVariable = "";
+            let chk = "";
+            
+            if(alum.estado === "APROBADO") {
+               chk = `<input type="checkbox" class="check-alumno" value="${alum.id}" data-nombre="${alum.nombre}" onchange="actualizarBtnMasivo()">`;
+               
+               const btnEnviar = alum.diplomaEnviado 
+                  ? `<button class="btn-alt" style="font-size:0.7rem; color:#60a5fa; border-color:#60a5fa; padding:4px 8px; margin-right:5px;">✔ Enviado</button>` 
+                  : `<button onclick="generarDiploma('${alum.id}', false)" class="btn-p" style="font-size:0.7rem; padding:4px 8px; margin-right:5px;">🎓 Diploma</button>`;
+               
+               const btnPreview = `<button onclick="verVistaPreviaDiploma('${alum.id}')" title="Ver Diploma" style="background:#334155; border:1px solid #475569; color:white; border-radius:4px; cursor:pointer; padding:4px 8px; font-size:0.8rem;">👁️</button>`;
+               
+               grupoVariable = `<div style="display:flex; align-items:center;">${btnEnviar}${btnPreview}</div>`;
+            } else {
+               chk = `<span style="color:${alum.estado === 'RECUPERACION' ? '#f59e0b' : '#ef4444'}">✕</span>`; 
+            }
+
+            // GRID PARA ALINEACIÓN PERFECTA
+            const acciones = `
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; width: 100%; min-width: 180px;">
+                <div style="justify-self: end;">${grupoVariable}</div>
+                <div>${btnBoleta}</div>
+            </div>`;
+
+            return `<tr style="border-bottom:1px solid #334155;">
+              <td style="text-align:center;">${chk}</td>
+              <td style="padding:12px; font-weight:bold; color:#f8fafc !important;">${alum.nombre}</td>
+              <td style="text-align:center; font-weight:bold; color:${colorAsist};">${alum.asistencia}%</td>
+              ${celdasNotas}
+              <td style="text-align:center; font-weight:bold; color:#f8fafc !important;">${alum.promedio}</td>
+              <td style="text-align:center;"><span style="color:${colorEstado}; font-weight:bold; padding:4px 8px; border-radius:4px; background:rgba(255,255,255,0.05); font-size:0.8rem;">${alum.estado.replace('_', ' ')}</span></td>
+              <td style="padding:8px 20px 8px 10px;">${acciones}</td></tr>`;
+          }).join('');
+      }
+
+      // --- RENDERIZADO FINAL CON AJUSTE MÓVIL ---
+      const contenedorResponsive = document.querySelector('.table-responsive');
+      const htmlFinalTabla = `<table id="tabla-notas" style="width:100%; border-collapse:collapse; min-width:800px;">${header}${body}</tbody></table>`;
+      
+      if (contenedorResponsive) {
+         contenedorResponsive.innerHTML = htmlFinalTabla;
+      } else {
+         const wrapper = document.createElement('div');
+         wrapper.className = "table-responsive";
+         wrapper.innerHTML = htmlFinalTabla;
+         
+         // Reemplazamos la tabla original por el wrapper
+         const tablaOriginal = document.getElementById('tabla-notas');
+         if(tablaOriginal) tablaOriginal.replaceWith(wrapper);
+      }
+      
+      actualizarBtnMasivo();
+    })
+    .getLibroCalificacionesV2(currentEv);
+}
+
+// --- FUNCIÓN JS PARA LLAMAR AL BACKEND Y ABRIR MODAL ---
+function verVistaPreviaDiploma(idParticipante) {
+  if(!currentEv) return;
+  
+  // Abrir modal mostrando carga
+  const modal = document.getElementById('modal-preview-pdf');
+  const iframe = document.getElementById('pdf-frame');
+  const loader = document.getElementById('pdf-loader');
+  
+  modal.classList.remove('hidden');
+  iframe.classList.add('hidden');
+  loader.classList.remove('hidden'); // Mostrar "Cargando..."
+
+  google.script.run.withSuccessHandler(res => {
+     if(res.success) {
+        // Cargar PDF en base64 dentro del iframe
+        iframe.src = "data:application/pdf;base64," + res.base64;
+        loader.classList.add('hidden');
+        iframe.classList.remove('hidden');
+     } else {
+        showToast("Error", res.message, "error");
+        modal.classList.add('hidden');
+     }
+  }).previewDiplomaBackend(currentEv, idParticipante);
+}
+// --- CREAR TAREA ---
+
+
+
+
+// --- GUARDAR NOTA AL ESCRIBIR (CON LOG) ---
+
+
+// --- GENERAR DIPLOMA (Actualizado con Reenvío) ---
+function generarDiploma(idParticipante, esReenvio) {
+  let mensaje = "¿Deseas generar y enviar el diploma a este alumno?";
+  if(esReenvio) {
+    mensaje = "⚠️ ESTE DIPLOMA YA FUE ENVIADO ANTES.\n\n¿Estás seguro de que deseas volver a generarlo y enviarlo nuevamente?";
+  }
+
+  if(!confirm(mensaje)) return;
+  
+  showModal({ title: "Procesando", message: "Generando PDF y enviando correo...", type: "info" });
+  
+  // Pasamos 'esReenvio' como true/false al backend
+  google.script.run.withSuccessHandler(res => {
+    
+    // Si el backend dice que ya fue enviado (y no forzamos), mostramos error (por seguridad extra)
+    if(res.yaEnviado) {
+        showModal({ title: "Atención", message: res.message, type: "warning" });
+        return;
+    }
+
+    showModal({ 
+      title: res.success ? "¡Éxito!" : "Error", 
+      message: res.message, 
+      type: res.success ? "success" : "error" 
+    });
+    
+    // Recargar tabla para ver el botón cambiar a "✅ Enviado"
+    if(res.success) cargarGradebook();
+
+  }).procesarDiplomaBackend(currentEv, idParticipante, esReenvio);
+}
+// --- VER PERFIL DEL ALUMNO (DISEÑO FINAL: X ARRIBA Y SCROLL) ---
+function verKardex(idParticipante) {
+  const modal = document.getElementById('modal-perfil-wide');
+  const contenido = document.getElementById('modal-perfil-content');
+  
+  // Loader
+  contenido.innerHTML = `
+    <div style="text-align:center; padding:50px; color:#64748b;">
+       <div style="font-size:3rem; margin-bottom:10px;">⏳</div>
+       <p style="font-size:1.1rem;">Cargando perfil...</p>
+    </div>`;
+  
+  modal.classList.remove('hidden');
+
+  google.script.run.withSuccessHandler(res => {
+    if(!res.success) {
+      contenido.innerHTML = `
+        <div style="text-align:center; padding:40px; color:#ef4444;">
+           <h3>❌ Error</h3>
+           <p>${res.message}</p>
+           <button onclick="document.getElementById('modal-perfil-wide').classList.add('hidden')" class="btn-p" style="margin-top:20px;">Cerrar</button>
+        </div>`;
+      return;
+    }
+
+    const p = res.perfil;
+    
+    let html = `
+      <div style="position: relative; background: #f8fafc;">
+         
+         <button onclick="document.getElementById('modal-perfil-wide').classList.add('hidden')" 
+                 style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">
+            ✕
+         </button>
+
+         <div style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); padding: 35px 20px 45px 20px; text-align: center; color: white;">
+            <div style="width: 75px; height: 75px; background: white; color: #2563eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 2.2rem; margin: 0 auto 10px auto; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+               ${p.nombre.charAt(0).toUpperCase()}
+            </div>
+            <h2 style="margin: 0; font-size: 1.6rem; font-weight: 700;">${p.nombre}</h2>
+            <p style="margin: 5px 0 0 0; font-size: 0.95rem; opacity: 0.9;">${p.email}</p>
+         </div>
+
+         <div style="margin-top: -30px; padding: 0 30px; position: relative; z-index: 10;">
+            <div style="background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); display: flex; justify-content: space-around; align-items: center;">
+               <div style="text-align: center;">
+                  <span style="display: block; font-weight: 800; color: #1e293b; font-size: 1.3rem;">${p.totalCursos}</span>
+                  <span style="font-size: 0.7rem; color: #64748b; font-weight: bold; text-transform: uppercase;">Cursos</span>
+               </div>
+               <div style="height: 30px; width: 1px; background: #e2e8f0;"></div>
+               <div style="text-align: center;">
+                  <span style="display: block; font-weight: 800; color: #10b981; font-size: 1.3rem;">${p.aprobados}</span>
+                  <span style="font-size: 0.7rem; color: #64748b; font-weight: bold; text-transform: uppercase;">Aprobados</span>
+               </div>
+               <div style="height: 30px; width: 1px; background: #e2e8f0;"></div>
+               <div style="text-align: center;">
+                  <span style="display: block; font-weight: 800; color: #3b82f6; font-size: 1.3rem;">${p.promedio}</span>
+                  <span style="font-size: 0.7rem; color: #64748b; font-weight: bold; text-transform: uppercase;">Promedio</span>
+               </div>
+            </div>
+         </div>
+
+         <div style="padding: 20px 30px 30px 30px;">
+            <h4 style="color: #94a3b8; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 1px;">Historial Académico</h4>
+            
+            <div style="max-height: 320px; overflow-y: auto; padding-right: 5px;">`;
+
+    res.historial.forEach(h => {
+      const isAprobado = h.estado === "APROBADO";
+      const estadoColor = isAprobado ? "#10b981" : "#ef4444";
+      const icono = isAprobado ? "📜" : "📝";
+      const bgIcono = isAprobado ? "#ecfdf5" : "#fef2f2";
+
+      html += `
+        <div style="background: white; border-radius: 10px; padding: 12px 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #e2e8f0;">
+           <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; background: ${bgIcono}; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                 ${icono}
+              </div>
+              <div>
+                 <div style="font-weight: 700; color: #334155; font-size: 0.95rem;">${h.curso}</div>
+                 <div style="font-size: 0.8rem; color: #94a3b8;">${h.fecha}</div>
+              </div>
+           </div>
+           
+           <div style="text-align: right;">
+              <span style="background: ${estadoColor}; color: white; padding: 3px 10px; border-radius: 15px; font-size: 0.7rem; font-weight: 700;">
+                 ${h.estado}
+              </span>
+              <div style="font-size: 0.85rem; margin-top: 4px; color: #475569;">
+                 Nota: <strong>${h.nota}</strong>
+              </div>
+           </div>
+        </div>`;
+    });
+
+    if (res.historial.length === 0) {
+        html += `<div style="text-align:center; color:#94a3b8; padding:20px;">Sin cursos registrados.</div>`;
+    }
+
+    html += `   </div> </div> </div>`;
+
+    contenido.innerHTML = html;
+
+  }).obtenerKardexAlumno(idParticipante);
+}
+// --- PEGAR AL FINAL DE js.txt ---
+
+// 1. Lógica para el Switch (Presente / Ausente)
+function cambiarEstadoSwitch(id) {
+    const chk = document.getElementById('check-' + id);
+    const lbl = document.getElementById('label-' + id);
+    
+    if(chk.checked) {
+        lbl.innerText = "Presente";
+        lbl.style.color = "#10b981"; // Verde
+        lbl.setAttribute("data-estado", "Presente");
+    } else {
+        lbl.innerText = "Ausente";
+        lbl.style.color = "#94a3b8"; // Gris
+        lbl.setAttribute("data-estado", "Ausente");
+    }
+}
+
+// 2. Lógica para el Botón Justificar (Pill 💊)
+function marcarJustificado(id) {
+    const chk = document.getElementById('check-' + id);
+    const lbl = document.getElementById('label-' + id);
+    
+    // Apagamos el switch visualmente (el alumno no está)
+    chk.checked = false;
+    
+    // Cambiamos el texto y color a Justificado
+    lbl.innerText = "Justificado";
+    lbl.style.color = "#f59e0b"; // Amarillo/Ambar
+    lbl.setAttribute("data-estado", "Justificado");
+}
+
+// 3. Función para Guardar la Asistencia (Actualizada para leer los nuevos estados)
+function guardarAsistencia() {
+    const labels = document.querySelectorAll('span[id^="label-"]');
+    const datosParaGuardar = [];
+
+    labels.forEach(lbl => {
+        const idParticipante = lbl.id.replace('label-', '');
+        const estadoActual = lbl.getAttribute("data-estado"); 
+        
+        // Guardamos Presentes y Justificados. 
+        // Si dice "undefined" lo tratamos como Ausente y no lo guardamos.
+        if(estadoActual && estadoActual !== "Ausente" && estadoActual !== "undefined") {
+            datosParaGuardar.push({ 
+                idParticipante: idParticipante, 
+                estado: estadoActual 
+            });
+        }
+    });
+
+    const fechaElegida = document.getElementById('fecha-sesion-asist').value;
+    const btn = document.querySelector('#asistencia-panel button.btn-p');
+    
+    btn.innerText = "⏳ Guardando...";
+    btn.disabled = true;
+
+    google.script.run.withSuccessHandler(res => {
+      btn.innerText = "💾 Guardar Cambios";
+      btn.disabled = false;
+      
+      showModal({ title: "Guardado", message: res.message, type: "success" });
+      cargarAsistenciaDelDia(); // Recargar para ver contadores actualizados
+      
+    }).registrarAsistencia(currentEv, datosParaGuardar, user.email, fechaElegida);
+}
+// --- VER HISTORIAL (MATRIZ) EN MODAL (MODIFICADO CON TÍTULO) ---
+function verHistorial() {
+    if(!currentEv) return showToast("Atención", "Selecciona un evento primero", "warning");
+    
+    // 1. OBTENER EL NOMBRE DEL CURSO DE LA PANTALLA
+    const nombreCurso = document.getElementById('evento-titulo').innerText || "Reporte de Asistencia";
+
+    const contenedorTabla = document.getElementById('modal-message');
+    contenedorTabla.innerHTML = "Cargando reporte detallado...";
+    document.getElementById('modal-title').innerText = "Historial de Asistencia";
+    document.getElementById('modal-icon').innerText = "✅"; 
+    document.getElementById('custom-modal').classList.remove('hidden');
+
+    google.script.run.withSuccessHandler(res => {
+        const fechas = res.fechas;
+        const alumnos = res.datos;
+        
+        // --- 2. BOTÓN DE DESCARGA (Apunta al nuevo contenedor 'reporte-pdf-content') ---
+        let html = `
+          <div style="text-align: right; margin-bottom: 10px;">
+             <button onclick="descargarPDF('reporte-pdf-content')" class="btn-pdf">
+               ⬇ Descargar PDF
+             </button>
+          </div>
+        `;
+
+        // --- 3. CONTENEDOR IMPRIMIBLE (TÍTULO + TABLA) ---
+        // Todo lo que esté dentro de este div saldrá en el PDF
+        html += `<div id="reporte-pdf-content" style="padding: 10px; background: white;">
+                    
+                    <h2 style="text-align:center; color:#1e3a8a; margin-bottom:5px; font-family:sans-serif;">${nombreCurso}</h2>
+                    <p style="text-align:center; color:#64748b; margin-top:0; margin-bottom:20px; font-size:0.9rem;">Reporte de Asistencia Detallado</p>
+
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%; border-collapse:collapse; color:#1e293b; font-size:0.9rem;">
+                            <thead>
+                                <tr style="background:#f1f5f9; border-bottom:2px solid #e2e8f0;">
+                                    <th style="padding:10px; text-align:left; color:#1e3a8a;">Alumno / Fecha</th>`;
+        
+        fechas.forEach(f => {
+            html += `<th style="padding:10px; text-align:center;">${f}</th>`;
+        });
+        
+        html += `<th style="padding:10px; text-align:center; background:#e0f2fe; color:#0369a1;">% Asist.</th></tr></thead><tbody>`;
+        
+        alumnos.forEach(alum => {
+            html += `<tr style="border-bottom:1px solid #f1f5f9;">
+                        <td style="padding:10px; font-weight:bold;">${alum.nombre}</td>`;
+            
+            fechas.forEach(f => {
+                const estado = alum.historial[f];
+                let icono = "";
+                
+                if(estado === "Presente") {
+                    icono = `<span style="color:#10b981; font-weight:bold;">✔</span>`;
+                } else if (estado === "Justificado") {
+                    icono = `<span style="font-size:1.2rem;" title="Justificado">💊</span>`;
+                } else {
+                    icono = `<span style="color:#ef4444; font-weight:bold;">✕</span>`;
+                }
+                
+                html += `<td style="padding:10px; text-align:center;">${icono}</td>`;
+            });
+            
+            let colorPorc = '#10b981'; 
+            if(alum.porcentaje < 50) colorPorc = '#f59e0b'; 
+            if(alum.porcentaje < 30) colorPorc = '#ef4444'; 
+
+            html += `<td style="padding:10px; text-align:center; font-weight:bold; color:${colorPorc}; background:#f0f9ff;">
+                        ${alum.porcentaje}%
+                     </td></tr>`;
+        });
+        
+        html += `</tbody></table></div></div>`; // Cierre del contenedor imprimible
+        
+        contenedorTabla.innerHTML = html;
+        
+        document.getElementById('modal-actions').innerHTML = `
+            <button onclick="document.getElementById('custom-modal').classList.add('hidden')" class="btn-p">Cerrar</button>
+        `;
+    }).obtenerMatrizAsistencia(currentEv);
+}
+// --- LÓGICA DE SELECCIÓN Y ENVÍO MASIVO ---
+
+// 1. Seleccionar/Deseleccionar todos
+function toggleTodos(source) {
+  const checks = document.querySelectorAll('.check-alumno');
+  checks.forEach(c => c.checked = source.checked);
+  actualizarBtnMasivo();
+}
+
+// 2. Mostrar/Ocultar botón de acción según selección
+function actualizarBtnMasivo() {
+  const conteo = document.querySelectorAll('.check-alumno:checked').length;
+  const btn = document.getElementById('btn-masivo');
+  if(btn) {
+    if(conteo > 0) {
+      btn.style.display = 'inline-block';
+      btn.innerHTML = `📨 Enviar Diplomas a (${conteo}) Seleccionados`;
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+}
+
+// 3. Abrir Modal de Confirmación
+let colaEnvio = []; // Aquí guardaremos la lista para procesar
+
+function prepararEnvio() {
+  const seleccionados = document.querySelectorAll('.check-alumno:checked');
+  const listaUI = document.getElementById('lista-envio');
+  const totalUI = document.getElementById('total-envio');
+  
+  listaUI.innerHTML = "";
+  colaEnvio = []; // Limpiar cola
+
+  seleccionados.forEach(chk => {
+    const id = chk.value;
+    const nombre = chk.getAttribute('data-nombre');
+    
+    // Agregar a la cola de datos
+    colaEnvio.push({id: id, nombre: nombre});
+
+    // Agregar visualmente a la lista
+    listaUI.innerHTML += `<li style="padding:5px; border-bottom:1px solid #334155;">👤 ${nombre}</li>`;
+  });
+
+  totalUI.innerText = colaEnvio.length;
+  document.getElementById('modal-masivo').style.display = 'flex';
+}
+
+// 4. Ejecutar el proceso (Bucle inteligente)
+function ejecutarEnvioMasivo() {
+  // Cambiar vista a Barra de Progreso
+  document.getElementById('paso-confirmacion').style.display = 'none';
+  document.getElementById('paso-progreso').style.display = 'block';
+
+  const total = colaEnvio.length;
+  let procesados = 0;
+
+  // FUNCIÓN RECURSIVA PARA ENVIAR UNO POR UNO
+  // Esto evita que Google Script colapse por tiempo de espera
+  function procesarSiguiente() {
+    if (colaEnvio.length === 0) {
+      // FIN DEL PROCESO
+      document.getElementById('txt-progreso').innerHTML = "✅ <b>¡Proceso Finalizado!</b>";
+      document.getElementById('barra-progreso').style.background = "#3b82f6"; // Azul
+      setTimeout(() => {
+        cerrarModalMasivo();
+        cargarGradebook(); // Recargar tabla para ver los nuevos estados "Enviado"
+      }, 2000);
+      return;
+    }
+
+    // Tomar el siguiente de la fila
+    const actual = colaEnvio.shift(); // Saca el primero
+    procesados++;
+    
+    // Calcular porcentaje
+    const porcentaje = Math.round((procesados / total) * 100);
+    document.getElementById('barra-progreso').style.width = porcentaje + "%";
+    document.getElementById('txt-progreso').innerText = `Enviando ${procesados} de ${total}: ${actual.nombre}...`;
+
+    // LLAMADA AL BACKEND
+    // Usamos 'true' en el segundo parámetro para forzar envío si es necesario, 
+    // o puedes cambiar la lógica para no reenviar si ya tiene fecha.
+    google.script.run
+      .withSuccessHandler(res => {
+         // Cuando termine este, llama al siguiente inmediatamente
+         procesarSiguiente(); 
+      })
+      .withFailureHandler(err => {
+         // Si uno falla, lo registramos pero seguimos con el siguiente
+         console.error("Error con " + actual.nombre, err);
+         procesarSiguiente(); 
+      })
+      .procesarDiplomaBackend(currentEv, actual.id, false); // false = No reenviar si ya existe (para evitar spam)
+  }
+
+  // Arrancar el motor
+  procesarSiguiente();
+}
+
+// --- FUNCIÓN PARA DESCARGAR PDF (html2pdf) ---
+
+// --- FUNCIÓN PARA DESCARGAR PDF (Actualizada) ---
+function descargarPDF(idOpcional) {
+  // Intentamos buscar la tabla por el ID que nos pasan, o buscamos las conocidas
+  let elemento = null;
+  
+  if (idOpcional) {
+      elemento = document.getElementById(idOpcional);
+  } else {
+      // Búsqueda automática
+      elemento = document.getElementById('tabla-historial-pdf') || 
+                 document.getElementById('tabla-reporte-matriz');
+  }
+  
+  if (!elemento) {
+      showToast("Error", "No se encontró la tabla para generar el PDF.", "error");
+      return;
+  }
+
+  const opciones = {
+    margin:       0.3,
+    filename:     'Reporte_Asistencia.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true },
+    jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+  };
+
+  // Buscamos cualquier botón PDF visible para cambiarle el texto
+  const btn = document.querySelector('.btn-pdf');
+  const textoOriginal = btn ? btn.innerText : '⬇ Descargar';
+  
+  if(btn) {
+    btn.innerText = "⏳ Generando...";
+    btn.disabled = true;
+  }
+
+  html2pdf().set(opciones).from(elemento).save().then(() => {
+    if(btn) {
+      btn.innerText = textoOriginal;
+      btn.disabled = false;
+    }
+  }).catch(err => {
+    console.error(err);
+    if(btn) {
+      btn.innerText = "Error ❌";
+      setTimeout(() => { 
+          btn.innerText = textoOriginal; 
+          btn.disabled = false; 
+      }, 2000);
+    }
+  });
+}
+// --- LÓGICA DEL CRUD DE PARTICIPANTES ---
+
+function irACrudParticipantes() {
+  ocultarSecciones();
+  document.getElementById('crud-participantes-section').classList.remove('hidden');
+  cargarTablaParticipantes();
+}
+
+function cargarTablaParticipantes() {
+  const tbody = document.getElementById('tabla-participantes-body');
+  tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:20px;'>Cargando directorio...</td></tr>";
+  
+  google.script.run.withSuccessHandler(lista => {
+    if(lista.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:20px;'>No hay alumnos registrados aún.</td></tr>";
+      return;
+    }
+
+    tbody.innerHTML = lista.map(p => `
+      <tr style="border-bottom: 1px solid #334155;">
+        <td style="padding:15px; font-weight:bold;">${p.nombre}</td>
+        <td style="padding:15px; color:#cbd5e1;">${p.email}</td>
+        <td style="padding:15px;">
+           <span class="cupo-badge badge-ok" style="background:rgba(59, 130, 246, 0.2); color:#60a5fa;">${p.nombreEvento}</span>
+        </td>
+        <td style="padding:15px; text-align:right;">
+           <div style="display:flex; gap:10px; justify-content:flex-end;">
+              <button onclick="verKardex('${p.id}')" title="Ver Perfil Académico" style="background:#3b82f6; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;">🎓</button>
+              <button onclick="abrirEditarParticipante('${p.id}', '${p.nombre}', '${p.email}')" title="Editar Datos" style="background:#f59e0b; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;">✏️</button>
+              <button onclick="borrarParticipante('${p.id}', '${p.nombre}')" title="Eliminar Inscripción" style="background:#ef4444; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;">🗑️</button>
+           </div>
+        </td>
+      </tr>
+    `).join('');
+    
+  }).getTodosLosParticipantes();
+}
+
+// Editar
+function abrirEditarParticipante(id, nombre, email) {
+  document.getElementById('edit-p-id').value = id;
+  document.getElementById('edit-p-nombre').value = nombre;
+  document.getElementById('edit-p-email').value = email;
+  document.getElementById('modal-editar-participante').classList.remove('hidden');
+}
+
+function guardarEdicionParticipante() {
+  const datos = {
+    id: document.getElementById('edit-p-id').value,
+    nombre: document.getElementById('edit-p-nombre').value,
+    email: document.getElementById('edit-p-email').value
+  };
+  
+  const btn = document.querySelector('#modal-editar-participante .btn-p');
+  const txtOriginal = btn.innerText;
+  btn.innerText = "Guardando...";
+  btn.disabled = true;
+
+  google.script.run.withSuccessHandler(res => {
+    btn.innerText = txtOriginal;
+    btn.disabled = false;
+    document.getElementById('modal-editar-participante').classList.add('hidden');
+    
+    if(res.success) {
+       showModal({ title: "Actualizado", message: res.message, type: "success" });
+       cargarTablaParticipantes(); // Recargar lista
+    } else {
+       showModal({ title: "Error", message: res.message, type: "error" });
+    }
+  }).editarParticipanteDirecto(datos);
+}
+
+// Eliminar
+function borrarParticipante(id, nombre) {
+  if(confirm(`¿Estás seguro de eliminar la inscripción de ${nombre}?\nEsta acción no se puede deshacer.`)) {
+     google.script.run.withSuccessHandler(res => {
+        if(res.success) {
+           cargarTablaParticipantes();
+        } else {
+           showToast("Error", res.message, "error");
+        }
+     }).eliminarParticipanteDirecto(id);
+  }
+}
+// --- FUNCIONES PARA CREAR DESDE EL CRUD ---
+
+function abrirModalCrearDesdeCrud() {
+  // 1. Limpiar inputs
+  document.getElementById('new-p-nombre').value = "";
+  document.getElementById('new-p-email').value = "";
+  
+  // 2. Mostrar Modal
+  const modal = document.getElementById('modal-crear-participante');
+  const select = document.getElementById('new-p-evento');
+  modal.classList.remove('hidden');
+  select.innerHTML = "<option>Cargando cursos...</option>";
+
+  // 3. Cargar lista de eventos activos
+  google.script.run.withSuccessHandler(eventos => {
+     if(eventos.length === 0) {
+        select.innerHTML = "<option value=''>No hay cursos disponibles</option>";
+        return;
+     }
+     // Llenar dropdown
+     select.innerHTML = eventos.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+  }).getEventos(user.email, user.rol);
+}
+
+function guardarNuevoPDesdeCrud() {
+  const idEvento = document.getElementById('new-p-evento').value;
+  const nombre = document.getElementById('new-p-nombre').value;
+  const correo = document.getElementById('new-p-email').value;
+
+  if(!idEvento || !nombre || !correo) {
+     showToast("Atención", "Por favor completa todos los campos.", "warning");
+     return;
+  }
+
+  const btn = document.querySelector('#modal-crear-participante .btn-p');
+  const textoOriginal = btn.innerText;
+  btn.innerText = "⏳ Inscribiendo...";
+  btn.disabled = true;
+
+  const datos = { nombre: nombre, correo: correo, idEvento: idEvento };
+
+  // Reusamos la función 'agregarParticipante' que ya existe en el backend
+  google.script.run.withSuccessHandler(res => {
+     btn.innerText = textoOriginal;
+     btn.disabled = false;
+
+     if(res.success) {
+        document.getElementById('modal-crear-participante').classList.add('hidden');
+        showModal({ title: "Inscrito", message: res.message, type: "success" });
+        cargarTablaParticipantes(); // Recargar la tabla para ver al nuevo
+     } else {
+        showModal({ title: "Error", message: res.message, type: "error" });
+     }
+  }).agregarParticipante(datos, user.rol);
+}
+// --- GENERAR REPORTE PDF (ACTA FINAL CON FIRMAS) ---
+function generarReportePDF(nombreCursoParam) { // Mantenemos el nombre original de tu función
+  if (!window.datosReporteActual) return showToast("Atención", "Espera a que carguen los datos.", "warning");
+  
+  const alumnos = window.datosReporteActual.alumnos;
+  // Usamos el nombre real del curso si viene del backend, si no, el del parámetro
+  const nombreCurso = window.datosReporteActual.curso || nombreCursoParam || "Curso";
+  const nombreDocente = user ? user.nombre : "Docente Responsable";
+  const fecha = new Date().toLocaleDateString();
+
+  if(alumnos.length === 0) return showToast("Atención", "No hay alumnos para generar el reporte.", "warning");
+
+  // 1. Ordenar alumnos alfabéticamente para el acta oficial
+  // (Hacemos una copia para no alterar el orden visual de la tabla web si no quieres)
+  const listaAlumnos = [...alumnos].sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+  // 2. Construir filas del Acta
+  let filas = "";
+  
+  listaAlumnos.forEach((alum, index) => {
+    // Estilo para reprobados en rojo oscuro (para impresión)
+    let colorTexto = "#1e293b"; // Negro/Gris oscuro
+    let estadoTexto = alum.estado.replace('_', ' ');
+    
+    if(alum.estado === "REPROBADO" || alum.estado === "SIN_DERECHO") {
+        colorTexto = "#b91c1c"; // Rojo
+    } else if (alum.estado === "RECUPERACION") {
+        colorTexto = "#c2410c"; // Naranja oscuro
+    }
+
+    filas += `
+      <tr style="border-bottom: 1px solid #cbd5e1;">
+        <td style="padding: 8px; text-align: center; color: #64748b; font-size: 0.85rem;">${index + 1}</td>
+        <td style="padding: 8px; font-weight: bold; color: #1e293b;">${alum.nombre}</td>
+        <td style="padding: 8px; text-align: center;">${alum.asistencia}%</td>
+        <td style="padding: 8px; text-align: center; font-weight: bold; font-size: 1rem;">${alum.promedio}</td>
+        <td style="padding: 8px; text-align: center; color:${colorTexto}; font-size: 0.8rem; font-weight:bold;">${estadoTexto}</td>
+      </tr>
+    `;
+  });
+
+  // 3. HTML DEL DOCUMENTO (Formato Sábana/Acta)
+  const contenido = `
+    <div style="padding: 40px; font-family: 'Helvetica', sans-serif; color: #333; background: #fff; max-width: 900px; margin: 0 auto;">
+      
+      <div style="text-align: center; border-bottom: 3px solid #0f172a; padding-bottom: 20px; margin-bottom: 20px;">
+         <h2 style="margin: 0; text-transform: uppercase; color: #0f172a; letter-spacing: 1px;">Acta Final de Calificaciones</h2>
+         <h3 style="margin: 10px 0 0 0; color: #334155; font-weight: normal; font-size: 1.4rem;">${nombreCurso}</h3>
+         <p style="margin: 5px 0 0 0; color: #64748b; font-size: 0.9rem;">Fecha de Emisión: ${fecha}</p>
+      </div>
+
+      <div style="margin-bottom: 20px; font-size: 0.9rem; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+         <table style="width:100%;">
+            <tr>
+               <td><strong>Docente:</strong> ${nombreDocente}</td>
+               <td style="text-align:right;"><strong>Total Alumnos:</strong> ${listaAlumnos.length}</td>
+            </tr>
+         </table>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+        <thead>
+          <tr style="background-color: #0f172a; color: #ffffff;">
+            <th style="padding: 10px; text-align: center; width: 40px;">#</th>
+            <th style="padding: 10px; text-align: left;">Nombre del Alumno</th>
+            <th style="padding: 10px; text-align: center; width: 80px;">Asist.</th>
+            <th style="padding: 10px; text-align: center; width: 80px;">Nota</th>
+            <th style="padding: 10px; text-align: center; width: 120px;">Estado Final</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filas}
+        </tbody>
+      </table>
+
+      <div style="margin-top: 80px; display:flex; justify-content: space-between; page-break-inside: avoid;">
+          
+          <div style="text-align: center; width: 40%;">
+              <div style="border-top: 1px solid #000; margin: 0 auto; width: 90%;"></div>
+              <p style="margin-top: 10px; font-weight: bold; font-size: 0.9rem;">${nombreDocente}</p>
+              <p style="margin: 0; color: #64748b; font-size: 0.8rem;">Firma del Docente</p>
+          </div>
+
+          <div style="text-align: center; width: 40%;">
+              <div style="border-top: 1px solid #000; margin: 0 auto; width: 90%;"></div>
+              <p style="margin-top: 10px; font-weight: bold; font-size: 0.9rem;">Coordinación Académica</p>
+              <p style="margin: 0; color: #64748b; font-size: 0.8rem;">Sello y Recibido</p>
+          </div>
+
+      </div>
+
+      <div style="margin-top: 40px; text-align: center; font-size: 0.7rem; color: #cbd5e1;">
+         Acta oficial generada por Eventos Manager - Pág 1/1
+      </div>
+    </div>
+  `;
+
+  // Configuración de PDF
+  const opt = {
+    margin: 0.4,
+    filename: `Acta_${nombreCurso.replace(/\s+/g, '_')}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+
+  const originalTitle = document.title;
+  document.title = "Generando Acta...";
+  
+  html2pdf().set(opt).from(contenido, 'string').save().then(() => {
+     document.title = originalTitle;
+  });
+}
+// --- LÓGICA DE AVISOS ---
+function abrirModalAnuncio() {
+  // Limpiar campos
+  document.getElementById('anuncio-asunto').value = "";
+  document.getElementById('anuncio-mensaje').value = "";
+  // Mostrar
+  document.getElementById('modal-anuncio').classList.remove('hidden');
+}
+
+function enviarAnuncioBackend() {
+  const asunto = document.getElementById('anuncio-asunto').value;
+  const mensaje = document.getElementById('anuncio-mensaje').value;
+
+  if(!asunto || !mensaje) {
+    showToast("Atención", "Por favor escribe un asunto y un mensaje.", "warning");
+    return;
+  }
+  
+  if(!currentEv) return showToast("Error", "No hay curso seleccionado.", "error");
+
+  // Feedback visual
+  const btn = document.querySelector('#modal-anuncio .btn-p');
+  const txtOriginal = btn.innerText;
+  btn.innerText = "⏳ Enviando...";
+  btn.disabled = true;
+
+  google.script.run.withSuccessHandler(res => {
+     btn.innerText = txtOriginal;
+     btn.disabled = false;
+     document.getElementById('modal-anuncio').classList.add('hidden');
+     
+     showModal({ 
+       title: res.success ? "Enviado" : "Error", 
+       message: res.message, 
+       type: res.success ? "success" : "error" 
+     });
+
+  }).enviarAnuncioCurso(currentEv, asunto, mensaje, user.email);
+}
+// --- FUNCIONALIDAD DEL PANEL DE ANÁLISIS ---
+let chartAnalisisVar = null; // Variable para guardar la instancia del gráfico
+
+function verAnalisisCurso() {
+  if(!currentEv) return showToast("Atención", "Selecciona un curso primero.", "warning");
+  
+  // 1. Mostrar Modal y poner estado de carga
+  document.getElementById('modal-analisis').classList.remove('hidden');
+  document.getElementById('lista-top').innerHTML = "<li>🔄 Calculando...</li>";
+  document.getElementById('lista-riesgo').innerHTML = "<li>🔄 Analizando...</li>";
+
+  // 2. Pedir datos al backend
+  google.script.run.withSuccessHandler(res => {
+    if(res.error) {
+       document.getElementById('lista-top').innerHTML = "<li>Error al cargar datos.</li>";
+       return;
+    }
+
+    // A. Llenar Top 3
+    const listaTop = document.getElementById('lista-top');
+    if(res.top.length === 0) listaTop.innerHTML = "<li>No hay alumnos aprobados aún.</li>";
+    else {
+       listaTop.innerHTML = res.top.map((a, i) => 
+         `<li>
+            <span style="font-weight:bold; color:#15803d;">#${i+1} ${a.nombre}</span> 
+            <span style="float:right; background:#dcfce7; padding:0 5px; border-radius:4px;">${a.promedio}</span>
+          </li>`
+       ).join('');
+    }
+
+    // B. Llenar Riesgo
+    const listaRiesgo = document.getElementById('lista-riesgo');
+    if(res.riesgo.length === 0) {
+       listaRiesgo.innerHTML = "<li style='color:#166534;'>✅ ¡Excelente! Nadie está en riesgo.</li>";
+    } else {
+       listaRiesgo.innerHTML = res.riesgo.map(a => 
+         `<li style="margin-bottom:5px;">
+            <b>${a.nombre}</b><br>
+            <span style="font-size:0.8rem; opacity:0.8;">${a.motivo}</span>
+          </li>`
+       ).join('');
+    }
+
+    // C. Dibujar Gráfica (Donut Chart)
+    const ctx = document.getElementById('chartAnalisis').getContext('2d');
+    
+    // Si ya existe una gráfica previa, la destruimos para crear la nueva
+    if(chartAnalisisVar) chartAnalisisVar.destroy(); 
+
+    chartAnalisisVar = new Chart(ctx, {
+       type: 'doughnut',
+       data: {
+          labels: ['Aprobados', 'No Aprobados'],
+          datasets: [{
+             data: [res.grafica.aprobados, res.grafica.reprobados],
+             backgroundColor: ['#10b981', '#ef4444'], // Verde y Rojo
+             borderWidth: 0,
+             hoverOffset: 4
+          }]
+       },
+       options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+             legend: { position: 'bottom', labels: { boxWidth: 12, padding: 20 } }
+          },
+          cutout: '65%' // Hace el agujero de la dona más grande
+       }
+    });
+
+  }).obtenerAnalisisCurso(currentEv);
+}
+// --- GENERAR BOLETA INDIVIDUAL (FINAL: CON FIRMA Y DOCENTE) ---
+function generarBoletaIndividual(idAlumno) {
+  if (!window.datosReporteActual) return showToast("Atención", "Espera a que carguen los datos.", "warning");
+  
+  const alumno = window.datosReporteActual.alumnos.find(a => a.id.toString() === idAlumno.toString());
+  const acts = window.datosReporteActual.actividades;
+  
+  // 1. DATOS REALES (Curso y Docente)
+  const nombreCurso = window.datosReporteActual.curso || "Curso de Capacitación";
+  const nombreDocente = user ? user.nombre : "Docente Responsable"; 
+  const fecha = new Date().toLocaleDateString();
+
+  if(!alumno) return showToast("Error", "Error encontrando al alumno.", "error");
+
+  // Colores y Estados
+  let colorEstado = "#ef4444"; 
+  let textoEstado = "REPROBADO";
+  if(alumno.estado === "APROBADO") { colorEstado = "#10b981"; textoEstado = "APROBADO"; }
+  else if(alumno.estado === "RECUPERACION") { colorEstado = "#f59e0b"; textoEstado = "RECUPERACIÓN"; }
+
+  // --- HTML DEL PDF ---
+  let contenido = `
+    <div style="padding: 40px; font-family: 'Helvetica', sans-serif; color: #333; background: #fff; max-width: 850px; margin: 0 auto; border: 1px solid #ddd;">
+      
+      <div style="border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px;">
+         <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+             <div style="max-width: 65%;">
+                <h1 style="margin: 0; color: #1e3a8a; font-size: 1.8rem; text-transform: uppercase; line-height: 1.1;">
+                    ${nombreCurso}
+                </h1>
+                <p style="margin: 10px 0 0 0; color: #444; font-size: 1.1rem;">
+                   Docente: <strong style="color:#000;">${nombreDocente}</strong>
+                </p>
+             </div>
+             <div style="text-align:right;">
+                <div style="font-size: 0.8rem; color: #64748b; letter-spacing:1px; margin-bottom:5px;">BOLETA OFICIAL</div>
+                <div style="font-size: 3rem; font-weight: bold; color: ${colorEstado}; line-height:1;">${alumno.promedio}</div>
+                <div style="font-size: 0.7rem; font-weight:bold; color: #64748b; margin-top:5px;">PROMEDIO FINAL</div>
+             </div>
+         </div>
+      </div>
+
+      <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 30px; display:flex; justify-content:space-between; border:1px solid #e2e8f0;">
+         <div>
+            <p style="margin:0; font-size:0.75rem; color:#64748b; text-transform:uppercase; font-weight:bold;">Alumno</p>
+            <h3 style="margin:5px 0 2px 0; color:#1e293b; font-size:1.4rem;">${alumno.nombre}</h3>
+            <p style="margin:0; font-size:0.95rem; color:#64748b;">${alumno.email}</p>
+         </div>
+         <div style="text-align:right;">
+             <p style="margin:0; font-size:0.75rem; color:#64748b; text-transform:uppercase; font-weight:bold;">Fecha de Emisión</p>
+             <p style="margin:5px 0 10px 0; font-weight:bold; color:#1e293b;">${fecha}</p>
+             <span style="background:${colorEstado}; color:white; padding:4px 12px; border-radius:15px; font-size:0.8rem; font-weight:bold;">
+                ${textoEstado}
+             </span>
+         </div>
+      </div>
+
+      <h4 style="margin-bottom:15px; border-bottom:1px solid #e2e8f0; padding-bottom:10px; color:#1e3a8a;">Desglose de Evaluaciones</h4>
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem; margin-bottom: 30px;">
+        <thead>
+          <tr style="background-color: #f1f5f9;">
+            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #cbd5e1; color:#475569;">Actividad / Examen</th>
+            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #cbd5e1; color:#475569;">Ponderación</th>
+            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #cbd5e1; color:#475569;">Calificación</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+  acts.forEach(a => {
+    // Usamos 'a.nombre' que ahora viene corregido del backend
+    const nombreActividad = a.nombre || "Actividad"; 
+    const nota = alumno.notas[a.id] !== undefined ? alumno.notas[a.id] : "-";
+    
+    contenido += `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #eee; color:#333;">${nombreActividad}</td>
+        <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee; color:#666;">${a.peso}%</td>
+        <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee; font-weight:bold; color:#0f172a;">${nota}</td>
+      </tr>`;
+  });
+
+  contenido += `
+        </tbody>
+      </table>
+
+      <div style="display:flex; gap:20px; align-items:center; background:#fff; border:1px solid #e2e8f0; padding:15px; border-radius:8px; margin-bottom: 60px;">
+         <div style="font-size:2rem;">📅</div>
+         <div>
+            <h4 style="margin:0; color:#1e293b;">Asistencia Registrada</h4>
+            <p style="margin:5px 0 0 0; color:#64748b;">El alumno cumplió con un <strong>${alumno.asistencia}%</strong> de asistencia total.</p>
+         </div>
+      </div>
+
+      <div style="margin-top: 50px; display:flex; justify-content:center;">
+          <div style="text-align: center;">
+              <div style="border-top: 2px solid #000; width: 300px; margin: 0 auto;"></div>
+              
+              <p style="margin-top: 10px; font-weight: bold; color: #1e293b; font-size:1.1rem;">${nombreDocente}</p>
+              <p style="margin: 0; color: #64748b; font-size:0.9rem;">Firma del Docente</p>
+          </div>
+      </div>
+      
+      <div style="margin-top: 60px; text-align: center; font-size: 0.7rem; color: #cbd5e1;">
+         Documento generado digitalmente por Eventos Manager
+      </div>
+    </div>
+  `;
+
+  // Configuración
+  const opt = {
+    margin: 0.4,
+    filename: `Boleta_${alumno.nombre.replace(/\s+/g, '_')}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+  
+  // Feedback
+  const originalTitle = document.title;
+  document.title = "Generando PDF...";
+  html2pdf().set(opt).from(contenido, 'string').save().then(() => { document.title = originalTitle; });
+}
+// --- LÓGICA DE RECUPERACIÓN DE CONTRASEÑA ---
+
+function abrirModalRecuperacion() {
+  document.getElementById('modal-recuperacion').classList.remove('hidden');
+  document.getElementById('recup-paso-1').classList.remove('hidden');
+  document.getElementById('recup-paso-2').classList.add('hidden');
+  document.getElementById('recup-email').value = "";
+  document.getElementById('recup-token').value = "";
+  document.getElementById('recup-pass-new').value = "";
+}
+
+function cerrarModalRecuperacion() {
+  document.getElementById('modal-recuperacion').classList.add('hidden');
+}
+
+function volverAPaso1() {
+  document.getElementById('recup-paso-1').classList.remove('hidden');
+  document.getElementById('recup-paso-2').classList.add('hidden');
+}
+
+// PASO 1: Pedir el código
+function enviarSolicitudRecuperacion() {
+  const email = document.getElementById('recup-email').value;
+  if(!email) return showToast("Atención", "Por favor escribe tu correo.", "warning");
+
+  const btn = document.querySelector('#recup-paso-1 .btn-p');
+  const txtOriginal = btn.innerText;
+  btn.innerText = "⏳ Enviando...";
+  btn.disabled = true;
+
+  google.script.run.withSuccessHandler(res => {
+     btn.innerText = txtOriginal;
+     btn.disabled = false;
+     
+     if(res.success) {
+        // Avanzar al Paso 2
+        document.getElementById('recup-paso-1').classList.add('hidden');
+        document.getElementById('recup-paso-2').classList.remove('hidden');
+        showToast("Información", res.message, "info"); // Aviso simple
+     } else {
+        showToast("Error", res.message, "error");
+     }
+  }).solicitarRecuperacionPass(email);
+}
+
+// PASO 2: Confirmar el cambio
+function confirmarCambioPass() {
+  const email = document.getElementById('recup-email').value;
+  const token = document.getElementById('recup-token').value;
+  const newPass = document.getElementById('recup-pass-new').value;
+
+  if(!token || !newPass) return showToast("Atención", "Completa todos los campos.", "warning");
+
+  const btn = document.querySelector('#recup-paso-2 .btn-p');
+  const txtOriginal = btn.innerText;
+  btn.innerText = "⏳ Validando...";
+  btn.disabled = true;
+
+  google.script.run.withSuccessHandler(res => {
+     btn.innerText = txtOriginal;
+     btn.disabled = false;
+
+     if(res.success) {
+        showToast("Éxito", res.message, "success");
+        cerrarModalRecuperacion();
+     } else {
+        showToast("Error", res.message, "error");
+     }
+  }).cambiarPassConToken(email, token, newPass);
+}
+// ======================================================
+// === FUNCIONES DE AUDITORÍA (PEGAR AL FINAL DE JS.TXT) ===
+// ======================================================
+
+// 1. GUARDAR NOTA (Con Auditoría)
+function guardarNotaCambio(idAct, idAlum, valor) {
+  if(valor < 0 || valor > 10) {
+    showToast("Atención", "La nota debe ser entre 0 y 10", "warning");
+    return;
+  }
+  
+  // Guardar visualmente "Guardando..." si quisieras, o directo:
+  google.script.run.withSuccessHandler(() => {
+     // Registrar Log
+     google.script.run.registrarLog(
+        user.email, 
+        "Notas", 
+        "Modificación", 
+        `Actualizó nota del alumno ID ${idAlum} en actividad ${idAct} a: ${valor}`
+     );
+  }).guardarNota(idAct, idAlum, valor);
+}
+
+// 2. NUEVA TAREA (Con Auditoría)
+
+
+// 3. GUARDAR USUARIO (Con Auditoría)
+function guardarUsuario() {
+  const u = {
+      nombre: document.getElementById('u-nombre').value,
+      email: document.getElementById('u-email').value,
+      pass: document.getElementById('u-pass').value,
+      rol: document.getElementById('u-rol').value,
+      usuarioActor: user.email
+  };
+  
+  // Validar
+  if(!validarCamposObligatorios([
+      {id:'u-nombre', tipo:'text'},
+      {id:'u-email', tipo:'email'},
+      {id:'u-pass', tipo:'password'} // Se asume obligatorio siempre para simplificar por ahora
+  ])) return;
+
+  google.script.run.withSuccessHandler(res => {
+      // Registrar Log
+      google.script.run.registrarLog(
+          user.email, 
+          "Usuarios", 
+          "Guardar", 
+          `Gestionó usuario: ${u.email} con rol ${u.rol}`
+      );
+      
+      cerrarModalUsuario();
+      if(typeof cargarUsuarios === "function") cargarUsuarios(); // Refrescar si existe la función
+      showToast("Éxito", res.message, "success");
+  }).guardarUsuarioServidor(u);
+}
+
+// 4. ELIMINAR USUARIO (Con Auditoría)
+function confirmarEliminarUser(email) {
+    if(confirm("¿Seguro que deseas eliminar al usuario " + email + "?")) {
+      google.script.run.withSuccessHandler(() => {
+          // Registrar Log
+          google.script.run.registrarLog(
+              user.email, 
+              "Usuarios", 
+              "Eliminar", 
+              `Eliminó al usuario: ${email}`
+          );
+          
+          if(typeof cargarUsuarios === "function") cargarUsuarios();
+      }).eliminarUsuarioServidor(email);
+    }
+}
+// --- GESTIÓN DE TAREAS (CRUD COMPLETO) ---
+
+// 1. ABRIR MODAL PARA CREAR (Limpia campos)
+function abrirModalTarea() {
+  document.getElementById('t-id').value = ""; // Limpiar ID (modo crear)
+  document.getElementById('t-titulo').value = "";
+  document.getElementById('t-desc').value = "";
+  document.getElementById('t-peso').value = "";
+  document.getElementById('modal-tarea').classList.remove('hidden');
+}
+
+// 2. ABRIR MODAL PARA EDITAR (Carga datos)
+function prepararEdicionTarea(id, nombre, peso) {
+  document.getElementById('t-id').value = id; // Poner ID (modo edición)
+  document.getElementById('t-titulo').value = nombre;
+  document.getElementById('t-peso').value = peso;
+  document.getElementById('t-desc').value = ""; // Opcional: podrías traer la descripción si la tuvieras a mano
+  document.getElementById('modal-tarea').classList.remove('hidden');
+}
+
+// 3. GUARDAR (Maneja Crear y Editar)
+function guardarNuevaTarea() {
+  const id = document.getElementById('t-id').value;
+  const titulo = document.getElementById('t-titulo').value;
+  const desc = document.getElementById('t-desc').value;
+  const peso = document.getElementById('t-peso').value;
+
+  if(!validarCamposObligatorios([
+      {id:'t-titulo', tipo:'text'}
+  ])) return;
+
+  const datos = {
+    id: id, // Si está vacío es nuevo, si tiene valor es edición
+    idEvento: currentEv,
+    titulo: titulo,
+    desc: desc,
+    peso: peso
+  };
+
+  const btn = document.querySelector('#modal-tarea .btn-p');
+  const txtOriginal = btn.innerText;
+  btn.innerText = "Guardando...";
+  btn.disabled = true;
+
+  if (id) {
+    // --- MODO EDICIÓN ---
+    google.script.run.withSuccessHandler(res => {
+       google.script.run.registrarLog(user.email, "Actividades", "Editar", `Editó actividad: ${titulo}`);
+       
+       btn.innerText = txtOriginal;
+       btn.disabled = false;
+       document.getElementById('modal-tarea').classList.add('hidden');
+       cargarGradebook();
+       showToast("Actualizado", res.message, "success");
+    }).editarActividadServidor(datos);
+
+  } else {
+    // --- MODO CREACIÓN ---
+    google.script.run.withSuccessHandler(res => {
+       google.script.run.registrarLog(user.email, "Actividades", "Crear", `Creó actividad: ${titulo}`);
+       
+       btn.innerText = txtOriginal;
+       btn.disabled = false;
+       document.getElementById('modal-tarea').classList.add('hidden');
+       cargarGradebook();
+       showToast("Éxito", res.message, "success");
+    }).crearTarea(datos);
+  }
+}
+
+// 4. BORRAR TAREA
+
+// ======================================================
+// === LÓGICA DE TENDENCIAS Y ESTADÍSTICAS ===
+// ======================================================
+
+// Variables globales para los gráficos
+let chartAsistVar = null;
+let chartPromediosVar = null;
+let chartDistribucionVar = null;
+
+function cargarFiltroDocentes() {
+  const select = document.getElementById('filtro-docente');
+  if(select.options.length > 1) return; // Ya cargado
+
+  google.script.run.withSuccessHandler(lista => {
+      lista.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d;
+          opt.innerText = d;
+          select.appendChild(opt);
+      });
+  }).getListaDocentes();
+}
+
+function verTendenciasCurso() {
+  // 1. Validar que hay un curso seleccionado
+  if(!currentEv) return showToast("Atención", "Por favor selecciona un curso primero.", "warning");
+  
+  // 2. Abrir el Modal
+  const modal = document.getElementById('modal-tendencias');
+  if(!modal) return showToast("Error", "No encuentro la ventana de tendencias en el HTML.", "error");
+  
+  modal.classList.remove('hidden');
+
+  // 3. Pedir datos al servidor
+  google.script.run.withSuccessHandler(res => {
+    if(res.error) { 
+        showToast("Error", res.message, "error"); 
+        return; 
+    }
+
+    // --- GRÁFICO 1: ASISTENCIA (Línea) ---
+    const canvasAsist = document.getElementById('chartAsistencia');
+    if(canvasAsist) {
+        const ctxAsist = canvasAsist.getContext('2d');
+        
+        // Destruir gráfico anterior si existe para no sobreponer
+        if(chartAsistVar) chartAsistVar.destroy();
+
+        chartAsistVar = new Chart(ctxAsist, {
+          type: 'line',
+          data: {
+            labels: res.asistencia.map(x => x.label), // Fechas
+            datasets: [{
+              label: '% Asistencia',
+              data: res.asistencia.map(x => x.valor), // Valores
+              borderColor: '#ef4444', 
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              fill: true,
+              tension: 0.3
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { min: 0, max: 100 } }
+          }
+        });
+    }
+
+    // --- GRÁFICO 2: NOTAS (Barras) ---
+    const canvasNotas = document.getElementById('chartNotas');
+    if(canvasNotas) {
+        const ctxNotas = canvasNotas.getContext('2d');
+        
+        if(chartNotasVar) chartNotasVar.destroy();
+
+        chartNotasVar = new Chart(ctxNotas, {
+          type: 'bar',
+          data: {
+            labels: res.notas.map(x => x.label), // Nombres de Tareas
+            datasets: [{
+              label: 'Promedio Grupal',
+              data: res.notas.map(x => x.valor), // Promedios
+              backgroundColor: '#3b82f6',
+              borderRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { min: 0, max: 10 } }
+          }
+        });
+    }
+
+  }).getTendenciasCurso(currentEv);
+}
+// --- DESCARGAR EXCEL Y MOSTRAR TOP CURSO ---
+function descargarReporteExcel() {
+  const docente = document.getElementById('filtro-docente') ? document.getElementById('filtro-docente').value : "";
+  const inicio = document.getElementById('filtro-inicio') ? document.getElementById('filtro-inicio').value : "";
+  const fin = document.getElementById('filtro-fin') ? document.getElementById('filtro-fin').value : "";
+
+  const btn = document.querySelector('button[onclick="descargarReporteExcel()"]');
+  const txtOriginal = btn.innerText;
+  btn.innerText = "Generando...";
+  btn.disabled = true;
+
+  google.script.run.withSuccessHandler(res => {
+     btn.innerText = txtOriginal;
+     btn.disabled = false;
+
+     if(res.error) return showToast("Error", res.message, "error");
+
+     // 1. ACTUALIZAR TARJETA "CURSO ESTRELLA"
+     if(res.topCurso) {
+        document.getElementById('lbl-top-curso').innerText = res.topCurso.nombre;
+        document.getElementById('lbl-top-tasa').innerText = res.topCurso.asistencia + "%";
+     }
+
+     // 2. GENERAR Y DESCARGAR CSV (Excel)
+     let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM para acentos
+     
+     res.excelData.forEach(row => {
+        const rowString = row.map(e => `"${e}"`).join(","); // Comillas para evitar errores con comas en textos
+        csvContent += rowString + "\r\n";
+     });
+
+     const encodedUri = encodeURI(csvContent);
+     const link = document.createElement("a");
+     link.setAttribute("href", encodedUri);
+     link.setAttribute("download", "Reporte_Inteligencia_" + new Date().toISOString().slice(0,10) + ".csv");
+     document.body.appendChild(link);
+     link.click();
+     document.body.removeChild(link);
+
+  }).getReporteInteligencia(docente, inicio, fin);
+}
+// --- LOGICA DASHBOARD PRO ---
+// (Variables movidas al bloque de tendencias)
+
+function cargarDashboardPro() {
+  const docente = document.getElementById('filtro-docente').value;
+  const inicio = document.getElementById('filtro-inicio').value;
+  const fin = document.getElementById('filtro-fin').value;
+
+  // Efecto de carga en KPIs
+  document.getElementById('kpi-inscritos').innerText = "...";
+  
+  google.script.run.withSuccessHandler(res => {
+     if(res.error) { showToast("Error", res.message, "error"); return; }
+
+     // 1. LLENAR KPIs
+     const k = res.kpis;
+     document.getElementById('kpi-inscritos').innerText = k.totalAlumnos;
+     document.getElementById('kpi-promedio').innerText = k.promedioGlobal;
+     document.getElementById('kpi-aprobacion').innerText = k.tasaAprobacion + "%";
+     document.getElementById('kpi-docente').innerText = k.mejorDocente || "N/A";
+
+     // 2. GRÁFICO DE BARRAS (PROMEDIOS)
+     const ctx1 = document.getElementById('chartPromedios').getContext('2d');
+     if(chartPromediosVar) chartPromediosVar.destroy();
+     
+     chartPromediosVar = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+           labels: res.charts.cursos,
+           datasets: [{
+              label: 'Nota Promedio',
+              data: res.charts.promedios,
+              backgroundColor: '#3b82f6',
+              borderRadius: 5
+           }]
+        },
+        options: {
+           responsive: true,
+           maintainAspectRatio: false,
+           scales: { y: { beginAtZero: true, max: 10 } }
+        }
+     });
+
+     // 3. GRÁFICO DE PASTEL (APROBADOS VS REPROBADOS)
+     const ctx2 = document.getElementById('chartDistribucion').getContext('2d');
+     if(chartDistribucionVar) chartDistribucionVar.destroy();
+
+     chartDistribucionVar = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+           labels: ['Aprobados', 'Reprobados/Bajos'],
+           datasets: [{
+              data: res.charts.distribucion,
+              backgroundColor: ['#10b981', '#ef4444'],
+              borderWidth: 0
+           }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+     });
+
+  }).getReporteInteligencia(docente, inicio, fin);
+}
+// ======================================================
+// === UTILIDADES DE NAVEGACIÓN (INDISPENSABLE) ===
+// ======================================================
+
+function ocultarTodo() {
+  // Lista de todas las pantallas/secciones de tu sistema
+  const secciones = [
+    'eventos-section',
+    'stats-section',
+    'crear-evento-section',
+    'gestion-participantes',
+    'asistencia-panel',
+    'horario-section',
+    'usuarios-section',
+    'logs-section',
+    'notas-section',
+    'crud-participantes-section'
+  ];
+
+  secciones.forEach(id => {
+    const elemento = document.getElementById(id);
+    if (elemento) {
+      elemento.classList.add('hidden'); // Ocultar
+      elemento.classList.remove('active'); // Quitar clase activa si la usas
+      elemento.classList.remove('animate-in'); // Resetear animación
+    }
+  });
+}
+
+// Aseguramos que la función irAStats tenga acceso a esto
+function irAStats() {
+  ocultarTodo(); // <--- Ahora sí funcionará esta línea
+  const section = document.getElementById('stats-section');
+  if(section) {
+      section.classList.remove('hidden');
+      section.classList.add('active');
+      cargarFiltroDocentes(); // Cargar filtro
+      cargarDashboardPro(); // Cargar los gráficos
+  }
+}
+// --- LÓGICA PARA EL MODAL DE BORRADO ---
+
+// Variable temporal para guardar el ID
+let idTareaParaBorrar = null;
+
+// 1. Función que llama el botón de basura (Abre el modal)
+function borrarTarea(idActividad) {
+  idTareaParaBorrar = idActividad;
+  document.getElementById('modal-confirmar-borrado').classList.remove('hidden');
+}
+
+// 2. Función para cerrar el modal (Botón Cancelar)
+function cerrarModalBorrado() {
+  idTareaParaBorrar = null;
+  document.getElementById('modal-confirmar-borrado').classList.add('hidden');
+}
+
+// 3. Función que ejecuta el borrado real (Botón "Sí, Eliminar")
+function ejecutarBorradoTarea() {
+  if (!idTareaParaBorrar) return;
+
+  const btn = document.querySelector('#modal-confirmar-borrado .btn-p'); // Botón rojo
+  const textoOriginal = btn.innerText;
+  
+  // Feedback visual de carga
+  btn.innerText = "Eliminando...";
+  btn.disabled = true;
+
+  google.script.run.withSuccessHandler(res => {
+     // Restaurar botón y cerrar modal
+     btn.innerText = textoOriginal;
+     btn.disabled = false;
+     cerrarModalBorrado();
+
+     if (res.success) {
+        // Recargar la tabla para ver el cambio
+        cargarGradebook(); 
+     } else {
+        showToast("Error", res.message, "error");
+     }
+  }).eliminarActividadServidor(idTareaParaBorrar);
+}
+// --- PORTAL DEL ALUMNO (BACKEND) ---
+
+// --- PORTAL DEL ALUMNO (BACKEND) ---
+
+// --- PORTAL DEL ALUMNO (BACKEND) ---
+
+// ======================================================
+// === LÓGICA DEL PORTAL DE ALUMNO (FRONTEND) ===
+// ======================================================
+
+// Variable global para guardar los datos temporalmente y no tener que pedirlos de nuevo
+window.historialAlumnoTemp = [];
+
+// --- JS ACTUALIZADO PARA PORTAL ALUMNO ---
+
+function mostrarPortalAlumno(res) {
+  document.getElementById('login-screen').classList.add('hidden');
+  
+  var studentScreen = document.getElementById('student-screen');
+  if(!studentScreen) {
+    // Crear student-screen dinámicamente si no existe
+    document.body.insertAdjacentHTML('beforeend', '<div id="student-screen" class="hidden" style="min-height:100vh; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 20px;"><div id="student-content" style="color:white;"></div></div>');
+    studentScreen = document.getElementById('student-screen');
+  }
+  
+  studentScreen.classList.remove('hidden');
+  
+  // --- AJUSTAR ANCHO Y RECONSTRUIR HEADER ---
+  studentScreen.style.maxWidth = '900px';
+  studentScreen.style.margin = '0 auto';
+  studentScreen.style.minHeight = '100vh';
+  studentScreen.style.background = 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)';
+  studentScreen.style.padding = '20px';
+  
+  // Fondo oscuro para toda la página
+  document.body.style.background = '#0f172a';
+  
+  // Reconstruir header con solo botón de Cerrar Sesión
+  studentScreen.innerHTML = `
+    <header style="display:flex; justify-content:space-between; align-items:center; padding:15px 25px; background:rgba(30,41,59,0.9); border-radius:12px; margin-bottom:25px; border:1px solid #334155;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:1.5rem;">🎓</span>
+        <div>
+          <h2 style="color:white; margin:0; font-size:1.2rem;">Hola, ${res.nombre}</h2>
+          <small style="color:#94a3b8;">Portal del Estudiante</small>
+        </div>
+      </div>
+      <button onclick="logoutAlumno()" class="btn-salir">Cerrar Sesión</button>
+    </header>
+    <div id="student-content" style="color:white;"></div>
+  `;
+  
+  // --- CORE FIX: ESTABLECER SESIÓN DE USUARIO ---
+  const emailAlumno = res.datos && res.datos.perfil ? res.datos.perfil.email : (window.emailAlumnoLogin || '');
+  
+  user = {
+      email: emailAlumno,
+      nombre: res.nombre,
+      rol: 'alumno'
+  };
+  localStorage.setItem('sesion_usuario', JSON.stringify(user));
+
+  window.emailAlumnoActual = user.email;
+  window.historialAlumnoTemp = res.datos.historial;
+
+  const historial = res.datos.historial; 
+  const container = document.getElementById('student-content');
+  
+  if(!historial || historial.length === 0) {
+     container.innerHTML = "<div style='text-align:center; padding:40px; color:#64748b;'>📭 No tienes cursos registrados aún.</div>";
+     return;
+  }
+
+  let html = `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">`;
+  
+  historial.forEach((h, index) => {
+     const aprobado = h.estado === "APROBADO";
+     const reprobado = h.estado === "REPROBADO" || h.estado === "SIN DERECHO";
+     
+     let colorEstado = "#3b82f6"; 
+     let bordeColor = "#e2e8f0";
+
+     if(aprobado) { colorEstado = "#10b981"; bordeColor = "#10b981"; }
+     else if(reprobado) { colorEstado = "#ef4444"; bordeColor = "#ef4444"; }
+     
+     let btnDiploma = aprobado ? `<button onclick="descargarMiDiploma('${h.idEvento}')" class="btn-diploma-student" style="margin-top:15px;">🏆 Descargar Diploma</button>` : "";
+
+     html += `
+     <div style="background: white; border-radius: 12px; padding: 25px; border-top: 5px solid ${bordeColor}; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+        
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
+           <span style="background:${colorEstado}20; color:${colorEstado}; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold;">${h.estado}</span>
+           <span style="color:#94a3b8; font-size: 0.8rem;">📅 ${h.fecha}</span>
+        </div>
+        
+        <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.1rem;">${h.curso}</h3>
+        
+        <div style="display:flex; justify-content:space-between; margin: 15px 0; padding: 15px 0; border-top: 1px dashed #e2e8f0; border-bottom: 1px dashed #e2e8f0;">
+           
+           <div style="text-align:center; flex:1; border-right:1px solid #f1f5f9;">
+              <span style="display:block; font-size: 0.7rem; color: #64748b; margin-bottom:5px;">ASISTENCIA</span>
+              <span style="font-weight:bold; font-size: 1.3rem; color: #334155;">${h.asistencia}%</span>
+              <div style="margin-top:5px;">
+                 <button onclick="verDetalleAsistencia(${index})" style="font-size:0.75rem; color:#3b82f6; background:none; border:none; cursor:pointer; font-weight:600;">
+                    📅 Ver detalle
+                 </button>
+              </div>
+           </div>
+           
+           <div style="text-align:center; flex:1;">
+              <span style="display:block; font-size: 0.7rem; color: #64748b; margin-bottom:5px;">NOTA FINAL</span>
+              <span style="font-weight:bold; font-size: 1.3rem; color: #334155;">${h.nota}</span>
+              <div style="margin-top:5px;">
+                 <button onclick="verDetalleNotas(${index})" style="font-size:0.75rem; color:#3b82f6; background:none; border:none; cursor:pointer; font-weight:600;">
+                    🔍 Ver detalle
+                 </button>
+              </div>
+           </div>
+
+        </div>
+
+        ${btnDiploma}
+     </div>
+     `;
+  });
+  
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+// --- NUEVA FUNCIÓN: ABRIR MODAL DE ASISTENCIA ---
+function verDetalleAsistencia(index) {
+  const curso = window.historialAlumnoTemp[index];
+  if(!curso) return;
+
+  document.getElementById('asist-titulo-curso').innerText = curso.curso;
+  const tbody = document.getElementById('tabla-detalle-asistencia');
+  tbody.innerHTML = "";
+
+  if(!curso.historialAsistencia || curso.historialAsistencia.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='2' style='padding:15px; text-align:center; color:#64748b;'>No hay registros de asistencia.</td></tr>";
+  } else {
+      curso.historialAsistencia.forEach(a => {
+          // Colores según estado
+          let color = "#334155";
+          let bg = "transparent";
+          if(a.estado === "Presente") { color = "#166534"; bg = "#dcfce7"; } // Verde
+          else if(a.estado === "Ausente") { color = "#991b1b"; bg = "#fee2e2"; } // Rojo
+          else if(a.estado === "Justificado") { color = "#854d0e"; bg = "#fef9c3"; } // Amarillo
+
+          tbody.innerHTML += `
+             <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:10px; color:#334155;">${a.fecha}</td>
+                <td style="padding:10px; text-align:center;">
+                   <span style="color:${color}; background:${bg}; padding:3px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">
+                      ${a.estado}
+                   </span>
+                </td>
+             </tr>
+          `;
+      });
+  }
+  document.getElementById('modal-asistencia-alumno').classList.remove('hidden');
+}
+
+// --- FUNCIÓN PARA ABRIR EL MODAL DE DETALLES ---
+function verDetalleNotas(index) {
+  const curso = window.historialAlumnoTemp[index];
+  if(!curso) return;
+
+  document.getElementById('detalle-titulo-curso').innerText = curso.curso;
+  const tbody = document.getElementById('tabla-detalle-notas');
+  tbody.innerHTML = "";
+
+  if(!curso.desglose || curso.desglose.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='3' style='padding:15px; text-align:center; color:#64748b;'>No hay actividades registradas.</td></tr>";
+  } else {
+      curso.desglose.forEach(d => {
+          tbody.innerHTML += `
+             <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:10px; color:#334155;">${d.actividad}</td>
+                <td style="padding:10px; text-align:center; color:#64748b; background:#f8fafc;">${d.peso}%</td>
+                <td style="padding:10px; text-align:center; font-weight:bold; color:#0f172a;">${d.nota}</td>
+             </tr>
+          `;
+      });
+  }
+
+  document.getElementById('modal-detalle-alumno').classList.remove('hidden');
+}
+
+// --- FUNCIÓN PARA DESCARGAR EL PDF (JS) ---
+function descargarMiDiploma(idEvento) {
+  const email = window.emailAlumnoActual;
+  if(!email) return showToast("Error", "Error de sesión. Por favor ingresa de nuevo.", "error");
+
+  const btn = event.target; // El botón que se presionó
+  const textoOriginal = btn.innerHTML;
+  btn.innerHTML = "⏳ Generando PDF...";
+  btn.disabled = true;
+
+  google.script.run.withSuccessHandler(res => {
+     btn.innerHTML = textoOriginal;
+     btn.disabled = false;
+
+     if (res.success) {
+        // Truco para descargar Base64 como archivo
+        const link = document.createElement('a');
+        link.href = "data:application/pdf;base64," + res.base64;
+        link.download = res.fileName;
+        link.click();
+     } else {
+        showToast("Error", res.message, "error");
+     }
+  }).descargarDiplomaAlumno(idEvento, email);
+}
+
+function logoutAlumno() {
+  // --- AUDITORÍA: CIERRE DE SESIÓN ALUMNO ---
+  if(window.emailAlumnoActual) {
+    google.script.run.registrarLog(window.emailAlumnoActual, "Logout", "Seguridad", "Alumno cerró sesión");
+  }
+
+  // Limpiar sesión
+  localStorage.removeItem('sesion_usuario');
+  user = null;
+  window.emailAlumnoActual = null;
+  window.historialAlumnoTemp = [];
+
+  // Ocultar portal, mostrar login
+  document.getElementById('student-screen').classList.add('hidden');
+  document.getElementById('login-screen').classList.remove('hidden');
+  
+  // Limpiar campos para seguridad
+  document.getElementById('email').value = "";
+  
+  // Regresar visualmente al modo "Admin"
+  if(typeof alternarModoLogin === 'function' && modoAlumno) {
+      alternarModoLogin(); 
+  }
+}
+
+// --- HELPERS PARA MODAL DE CÓDIGO ALUMNO ---
+function cerrarModalCodigoAlumno() {
+  document.getElementById('modal-codigo-alumno').classList.add('hidden');
+  document.getElementById('input-codigo-2fa').value = "";
+}
+
+function reenviarCodigo() {
+  const email = document.getElementById('email').value.trim();
+  if(!email) return showToast("Error", "No se encontró el correo.", "error");
+
+  const btn = document.getElementById('btn-reenviar-code');
+  btn.disabled = true;
+  btn.innerText = "Enviando...";
+
+  google.script.run.withSuccessHandler(res => {
+    if(res.success) {
+      showToast("Éxito", "Código reenviado. Revisa tu correo.", "success");
+    } else {
+      showToast("Error", res.message, "error");
+    }
+    // Cooldown de 30s
+    let seg = 30;
+    btn.innerText = `Reenviar en ${seg}s`;
+    const timer = setInterval(() => {
+      seg--;
+      btn.innerText = `Reenviar en ${seg}s`;
+      if(seg <= 0) {
+        clearInterval(timer);
+        btn.disabled = false;
+        btn.innerText = "Reenviar Código";
+        btn.style.color = "#3b82f6";
+        btn.style.cursor = "pointer";
+      }
+    }, 1000);
+  }).enviarCodigoAccesoAlumno(email);
+}
+// --- LÓGICA DEL CENTRO DE REPORTES ---
+
+function irAReportes() {
+  ocultarTodo(); // Tu función existente que oculta todo
+  document.getElementById('reportes-section').classList.remove('hidden');
+  document.getElementById('contenedor-reporte-resultado').classList.add('hidden');
+}
+
+// --- FUNCIÓN COMPLETA PARA COPIAR Y PEGAR EN JS.TXT ---
+
+function cargarReporte(tipo) {
+  const container = document.getElementById('contenedor-reporte-resultado');
+  const tabla = document.getElementById('tabla-reporte-dinamica');
+  const titulo = document.getElementById('titulo-reporte-dinamico');
+
+  // 1. Mostrar estado de carga (Loading)
+  container.classList.remove('hidden');
+  titulo.innerText = "Generando reporte...";
+  tabla.innerHTML = "<tr><td style='padding:30px; text-align:center; color:white;'>⏳ Procesando datos en tiempo real...</td></tr>";
+
+  // 2. Llamar al backend
+  google.script.run.withSuccessHandler(res => {
+     if(!res.success) {
+        tabla.innerHTML = `<tr><td style='padding:20px; text-align:center; color:#ef4444;'>Error: ${res.message}</td></tr>`;
+        return;
+     }
+
+     titulo.innerText = res.titulo;
+     
+     // 3. Construir Cabecera
+     let html = `<thead style="background:#1e293b; color:white;"><tr>`;
+     res.columnas.forEach(col => {
+        html += `<th style="padding:12px; text-align:left;">${col}</th>`;
+     });
+     html += `</tr></thead><tbody>`;
+
+     // 4. Construir Filas
+     if(res.filas.length === 0) {
+        html += `<tr><td colspan="${res.columnas.length}" style="padding:20px; text-align:center; color:#94a3b8;">No se encontraron datos para este reporte.</td></tr>`;
+     } else {
+        res.filas.forEach(fila => {
+           html += `<tr style="border-bottom:1px solid #334155; color:#f1f5f9;">`;
+           
+           fila.forEach(celda => {
+              let contenido = celda;
+              let estilo = "";
+              let textoCelda = celda ? celda.toString() : "";
+
+              // A. Lógica de Colores (Semáforo)
+              if(textoCelda.includes("🔴") || textoCelda.includes("🚨") || textoCelda.includes("⚠️")) {
+                  estilo = "color:#ef4444; font-weight:bold;";
+              } else if(textoCelda.includes("🟢") || textoCelda.includes("🥇")) {
+                  estilo = "color:#10b981; font-weight:bold;";
+              }
+
+              // B. Lógica del Botón "Ver Gradebook"
+              // Si el backend nos dice "Ver Gradebook", dibujamos un botón real
+              if(textoCelda === "Ver Gradebook") {
+                  contenido = `<button onclick="irAEventos()" style="background:#3b82f6; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:500; transition: background 0.2s;">🔍 Ver Notas</button>`;
+              }
+
+              html += `<td style="padding:12px; ${estilo}">${contenido}</td>`;
+           });
+           html += `</tr>`;
+        });
+     }
+     html += `</tbody>`;
+     tabla.innerHTML = html;
+
+  }).getReporteCentralizado(tipo);
+}
+
+function descargarTablaReporte() {
+  // Reutilizamos tu lógica de descarga CSV o creamos una simple
+  const tabla = document.getElementById('tabla-reporte-dinamica');
+  let csv = [];
+  
+  // Headers
+  const headers = Array.from(tabla.querySelectorAll("th")).map(th => th.innerText);
+  csv.push(headers.join(","));
+
+  // Rows
+  const rows = tabla.querySelectorAll("tbody tr");
+  rows.forEach(row => {
+     const cols = Array.from(row.querySelectorAll("td")).map(td => `"${td.innerText}"`);
+     csv.push(cols.join(","));
+  });
+
+  const csvFile = new Blob([csv.join("\n")], { type: "text/csv" });
+  const downloadLink = document.createElement("a");
+  downloadLink.download = "Reporte_Sistema.csv";
+  downloadLink.href = window.URL.createObjectURL(csvFile);
+  downloadLink.style.display = "none";
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+}
+// --- FUNCIONES FRONTEND PARA 2FA ALUMNO (CON REENVÍO) ---
+
+let emailAlumnoPendiente = "";
+let intervaloReenvio = null;
+
+function abrirModalCodigoAlumno(email) {
+  emailAlumnoPendiente = email;
+  document.getElementById('msg-email-alumno').innerText = email;
+  document.getElementById('input-codigo-2fa').value = "";
+  
+  // Mostrar modal
+  document.getElementById('modal-codigo-alumno').classList.remove('hidden');
+  document.getElementById('input-codigo-2fa').focus();
+
+  // Iniciar cuenta regresiva para el botón de reenvío
+  iniciarTemporizadorReenvio();
+}
+
+function cerrarModalCodigoAlumno() {
+  document.getElementById('modal-codigo-alumno').classList.add('hidden');
+  emailAlumnoPendiente = "";
+  
+  // Limpiar temporizador si se cierra el modal
+  if(intervaloReenvio) clearInterval(intervaloReenvio);
+}
+
+function confirmarCodigoAlumno() {
+  const codigo = document.getElementById('input-codigo-2fa').value;
+  if(!codigo || codigo.length < 6) return showToast("Atención", "Por favor ingresa el código de 6 dígitos.", "warning");
+
+  const btn = document.querySelector('#modal-codigo-alumno .btn-p'); // Botón Verificar
+  const txtOriginal = btn.innerText;
+  btn.innerText = "⏳ Verificando...";
+  btn.disabled = true;
+
+  google.script.run.withSuccessHandler(res => {
+     btn.innerText = txtOriginal;
+     btn.disabled = false;
+
+     if(res.success) {
+        cerrarModalCodigoAlumno();
+        mostrarPortalAlumno(res);
+     } else {
+        showToast("Error", res.message, "error");
+     }
+  }).validarCodigoYEntrar(emailAlumnoPendiente, codigo);
+}
+
+// NUEVA: Función para manejar el contador de 30 segundos
+function iniciarTemporizadorReenvio() {
+  const btn = document.getElementById('btn-reenviar-code');
+  let segundos = 30;
+
+  // Estado inicial: Deshabilitado
+  btn.disabled = true;
+  btn.style.color = "#94a3b8"; // Gris
+  btn.style.cursor = "not-allowed";
+  btn.innerText = `Reenviar en ${segundos}s`;
+
+  if(intervaloReenvio) clearInterval(intervaloReenvio);
+
+  intervaloReenvio = setInterval(() => {
+    segundos--;
+    btn.innerText = `Reenviar en ${segundos}s`;
+
+    if (segundos <= 0) {
+      clearInterval(intervaloReenvio);
+      btn.disabled = false;
+      btn.innerText = "🔄 Reenviar Código Ahora";
+      btn.style.color = "#2563eb";
+      btn.style.cursor = "pointer";
+      btn.style.textDecoration = "underline";
+    }
+  }, 1000);
+}
+
+// ==========================================
+// ===  AUDITORÍA (SOLICITADA EN FASE 15) ===
+// ==========================================
+
+
+function irALogs() {
+  ocultarTodo();
+  document.getElementById('logs-section').classList.remove('hidden');
+  cargarLogs();
+}
+
+let logsCache = []; // Para búsqueda rápida local
+
+function cargarLogs() {
+  const tbody = document.getElementById('lista-logs-body');
+  if (!tbody) {
+    console.error('No se encontró el elemento lista-logs-body');
+    return;
+  }
+  
+  // Loading con spinner azul
+  tbody.innerHTML = `
+    <tr>
+      <td colspan='4' style='text-align:center; padding:40px;'>
+        <div class="spinner-blue" style="margin:0 auto 15px auto;"></div>
+        <div style='color:#94a3b8; font-size:1.1rem;'>Cargando registros de auditoría...</div>
+        <div style='color:#64748b; font-size:0.85rem; margin-top:5px;'>Por favor espera un momento</div>
+      </td>
+    </tr>
+  `;
+
+  google.script.run
+    .withSuccessHandler(logs => {
+      logsCache = logs || [];
+      renderLogs(logsCache);
+    })
+    .withFailureHandler(error => {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan='4' style='text-align:center; padding:40px;'>
+            <div style='font-size:2rem; margin-bottom:10px;'>❌</div>
+            <div style='color:#ef4444; font-size:1.1rem;'>Error al cargar los registros</div>
+            <div style='color:#94a3b8; font-size:0.85rem; margin-top:5px;'>${error.message || 'Error desconocido'}</div>
+            <button onclick='cargarLogs()' class='btn-alt' style='margin-top:15px;'>🔄 Reintentar</button>
+          </td>
+        </tr>
+      `;
+    })
+    .getLogsServidor();
+}
+
+function renderLogs(lista) {
+  const tbody = document.getElementById('lista-logs-body');
+  tbody.innerHTML = "";
+
+  if(!lista || lista.length === 0) {
+     tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:20px;'>No hay movimientos registrados.</td></tr>";
+     return;
+  }
+
+  /* 
+     Handle both Array (older/current gs) and Object (possible future) formats.
+     Array format from GS: [Date, User, Action, Module, Details]
+  */
+  
+  lista.forEach(l => {
+     let fecha, usuario, accion, detalle, modulo;
+
+     // Detect format
+     if (Array.isArray(l)) {
+        fecha = l[0];
+        usuario = l[1];
+        accion = l[2];
+        modulo = l[3];
+        detalle = l[4];
+     } else {
+        // Fallback for Object format
+        fecha = l.fecha;
+        usuario = l.usuario;
+        accion = l.accion;
+        modulo = l.modulo;
+        detalle = l.detalle;
+     }
+
+     // Formatting
+     if(fecha instanceof Date) fecha = fecha.toLocaleString();
+     if(!fecha) fecha = "-";
+     if(!usuario) usuario = "Desconocido";
+     if(!accion) accion = "-";
+     
+     // Combine Module + Details for the 4th column if needed
+     let infoDetallada = detalle;
+     if(modulo && detalle) infoDetallada = `[${modulo}] ${detalle}`;
+     else if(modulo) infoDetallada = `[${modulo}]`;
+
+     tbody.innerHTML += `
+       <tr style="border-bottom:1px solid #334155;">
+         <td style="padding:10px; color:#94a3b8; font-size:0.85rem;">${fecha}</td>
+         <td style="padding:10px; font-weight:bold; color:#e2e8f0;">${usuario}</td>
+         <td style="padding:10px; color:#3b82f6;">${accion}</td>
+         <td style="padding:10px; color:#cbd5e1; font-size:0.85rem;">${infoDetallada || '-'}</td>
+       </tr>
+     `;
+  });
+}
+
+function filtrarLogs() {
+  const busqueda = document.getElementById('busqueda-logs');
+  if(!busqueda) return;
+  
+  const termino = busqueda.value.toLowerCase();
+  
+  const filtrados = logsCache.filter(l => {
+     // Robust string conversion
+     const vals = Object.values(l).join(" ").toLowerCase();
+     return vals.includes(termino);
+  });
+  renderLogs(filtrados);
+}
+
+
+
+// NUEVA: Acción del botón Reenviar
+function reenviarCodigo() {
+  if(!emailAlumnoPendiente) return;
+
+  const btn = document.getElementById('btn-reenviar-code');
+  btn.innerText = "Enviando...";
+  btn.disabled = true;
+  btn.style.textDecoration = "none";
+
+  // Reusamos la función del backend que ya creamos
+  google.script.run.withSuccessHandler(res => {
+    if(res.success) {
+      showToast("Éxito", "Código reenviado. Revisa tu bandeja.", "success");
+      // Reiniciar el contador
+      iniciarTemporizadorReenvio();
+    } else {
+      showToast("Error", res.message, "error");
+      // Si falla, habilitamos de nuevo para que reintente
+      btn.disabled = false;
+      btn.innerText = "Reintentar envío";
+    }
+  }).enviarCodigoAccesoAlumno(emailAlumnoPendiente);
+}
+// ==========================================
+//   SISTEMA DE NOTIFICACIONES Y ESCÁNER QR
+// ==========================================
+
+// Variable global para evitar lecturas dobles muy rápidas
+let escaneoPausado = false; 
+
+// --- 1. FUNCIÓN PARA MOSTRAR NOTIFICACIONES FLOTANTES (TOAST) ---
+function showToast(titulo, mensaje, tipo = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return console.error("Error: No se encontró el div #toast-container en el HTML.");
+  
+  // Crear el elemento de la notificación
+  const toast = document.createElement('div');
+  toast.classList.add('toast', tipo); // Agrega clase .success, .error, etc.
+  
+  // Definir icono según el tipo
+  let icono = 'ℹ️';
+  if(tipo === 'success') icono = '✅';
+  if(tipo === 'error') icono = '⛔';
+  if(tipo === 'warning') icono = '⚠️';
+
+  // Contenido HTML del toast
+  toast.innerHTML = `
+    <div style="display:flex; align-items:center; gap:10px;">
+       <span style="font-size:1.5rem;">${icono}</span>
+       <div class="toast-content">
+          <span class="toast-title">${titulo}</span>
+          <span class="toast-msg">${mensaje}</span>
+       </div>
+    </div>
+  `;
+
+  // Agregar al contenedor
+  container.appendChild(toast);
+
+  // Reproducir sonido "Beep" (si existe el elemento de audio)
+  if(tipo === 'success' || tipo === 'warning') {
+     const audio = document.getElementById('audio-beep');
+     if(audio) {
+       audio.currentTime = 0;
+       // Intentar reproducir (a veces requiere interacción previa del usuario)
+       audio.play().catch(e => console.log("Audio bloqueado o no iniciado:", e));
+     }
+  }
+
+  // Animar entrada (deslizar desde la derecha)
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
+
+  // Eliminar automáticamente después de 4 segundos
+  setTimeout(() => {
+    toast.classList.remove('show'); // Deslizar hacia afuera
+    setTimeout(() => {
+      toast.remove(); // Borrar del DOM
+    }, 300); // Esperar a que termine la animación CSS
+  }, 4000);
+}
+
+// ==============================================================
+// BLOQUE DE FUNCIONES: ESCÁNER + SONIDO + CONTADOR (Versión Final)
+// ==============================================================
+
+// 1. GENERADOR DE SONIDO (BEEP) - No requiere archivos externos
+
+
+// 2. FUNCIÓN PARA INICIALIZAR EL CONTADOR (Llamar al cargar la tabla)
+function actualizarContadorDesdeDatos(listaAlumnos) {
+    if (!listaAlumnos) return;
+    
+    try {
+        const total = listaAlumnos.length;
+        // Cuenta cuantos tienen estado "Presente" (ajusta string según tu BD)
+        const presentes = listaAlumnos.filter(p => p.estado === "Presente" || p.asistencia === true).length;
+
+        document.getElementById('live-count-presentes').innerText = presentes;
+        document.getElementById('live-count-total').innerText = total;
+        document.getElementById('panel-contador').classList.remove('hidden');
+    } catch(e) {
+        console.log("Error calculando contador inicial:", e);
+    }
+}
+
+// 3. ESCÁNER INTELIGENTE (ACTUALIZADO CON CONTADOR)
+function onScanSuccess(decodedText, decodedResult) {
+    if (escaneoPausado) return;
+
+    // A. Feedback Auditivo
+    emitirBeep();
+
+    // B. Parseo del QR
+    let codigoParticipante = decodedText;
+    let idEventoDesdeQR = null;
+
+    if (decodedText.toString().includes("|")) {
+        const partes = decodedText.toString().split("|");
+        codigoParticipante = partes[0].trim();
+        if (partes.length > 1) idEventoDesdeQR = partes[1].trim(); 
+    }
+
+    console.log(`Scan: ${codigoParticipante}`);
+    escaneoPausado = true;
+    showToast("Procesando...", "Validando código...", "info");
+
+    let idEventoParaAsistencia = currentEv || idEventoDesdeQR;
+
+    if(!idEventoParaAsistencia) {
+        showToast("Error", "Selecciona un curso primero.", "error");
+        setTimeout(() => { escaneoPausado = false; }, 2000);
+        return;
+    }
+
+    // C. Feedback Visual INSTANTÁNEO (Switch + Contador)
+    try {
+        // 1. Mover Switch
+        const checkVisual = document.getElementById('check-' + codigoParticipante);
+        let yaEstabaPresente = false;
+        
+        if(checkVisual) {
+            yaEstabaPresente = checkVisual.checked; // Guardamos estado anterior
+            checkVisual.checked = true;
+            
+            // Función visual del switch (si la tienes definida en otro lado)
+            if(typeof cambiarEstadoSwitch === 'function') cambiarEstadoSwitch(codigoParticipante);
+        }
+
+        // 2. Sumar al Contador (+1) solo si no estaba presente antes
+        if (!yaEstabaPresente) {
+            let spanPres = document.getElementById('live-count-presentes');
+            let valActual = parseInt(spanPres.innerText) || 0;
+            let valTotal = parseInt(document.getElementById('live-count-total').innerText) || 0;
+            
+            if(valActual < valTotal) {
+                spanPres.innerText = valActual + 1;
+                
+                // Efecto visual de "salto" en el número
+                spanPres.style.transform = "scale(1.5)";
+                setTimeout(() => spanPres.style.transform = "scale(1)", 200);
+            }
+        }
+    } catch(e) { console.log("Error visual UI:", e); }
+
+    // D. Guardado en Base de Datos
+    google.script.run.withSuccessHandler(res => {
+       setTimeout(() => { escaneoPausado = false; }, 2000); 
+
+       if (res.success) {
+          showToast("¡Registrado!", res.mensaje, "success");
+          // Recargamos la tabla para asegurar consistencia
+          cargarAsistenciaDelDia(); 
+       } else {
+          // Si falló (ej: duplicado), revertimos visualmente si es necesario
+          const esAviso = res.message && res.message.toLowerCase().includes("ya");
+          showToast(esAviso ? "Información" : "Error", res.message, esAviso ? "warning" : "error");
+          cargarAsistenciaDelDia();
+       }
+       
+    }).registrarAsistenciaQR(codigoParticipante, idEventoParaAsistencia);
+}
+// ==========================================
+// ===   MI HORARIO (DOCENTE / ALUMNO)    ===
+// ==========================================
+
+// ==========================================
+// ===   MI HORARIO (DOCENTE / ALUMNO)    ===
+// ==========================================
+
+let calendar = null; // Instancia global del calendario
+
+function irAMiHorario() {
+  ocultarSecciones();
+  document.getElementById('horario-section').classList.remove('hidden');
+  
+  // Resetear vista a Lista por defecto
+  toggleCalendario('list');
+
+  const tbody = document.getElementById('lista-horario');
+  tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:20px;'>⏳ Cargando agenda...</td></tr>";
+
+  // Inicializar Calendario si no existe (Lazy Load)
+  if (!calendar) {
+     const calendarEl = document.getElementById('calendar');
+     calendar = new FullCalendar.Calendar(calendarEl, {
+       initialView: 'dayGridMonth',
+       locale: 'es',
+       headerToolbar: {
+         left: 'prev,next today',
+         center: 'title',
+         right: 'dayGridMonth,timeGridWeek,listWeek'
+       },
+       height: 650,
+       eventClick: function(info) {
+          showModal({ 
+            title: info.event.title, 
+            message: `📅 ${info.event.start.toLocaleDateString()} a las ${info.event.start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`, 
+            type: "info" 
+          });
+       }
+     });
+     calendar.render();
+  }
+
+  google.script.run.withSuccessHandler(renderHorario).getMiHorario(user.email);
+}
+
+// Detectar conflictos de horario
+function detectarConflictos(eventos) {
+  const conflictos = new Set();
+  
+  for (let i = 0; i < eventos.length; i++) {
+    if (!eventos[i].inicioISO || !eventos[i].finISO) continue;
+    
+    const inicio1 = new Date(eventos[i].inicioISO).getTime();
+    const fin1 = new Date(eventos[i].finISO).getTime();
+    
+    for (let j = i + 1; j < eventos.length; j++) {
+      if (!eventos[j].inicioISO || !eventos[j].finISO) continue;
+      
+      const inicio2 = new Date(eventos[j].inicioISO).getTime();
+      const fin2 = new Date(eventos[j].finISO).getTime();
+      
+      // Verificar si se solapan
+      if (inicio1 < fin2 && fin1 > inicio2) {
+        conflictos.add(eventos[i].id);
+        conflictos.add(eventos[j].id);
+      }
+    }
+  }
+  
+  return conflictos;
+}
+
+function renderHorario(lista) {
+  // 1. RENDER LISTA (TABLA)
+  const tbody = document.getElementById('lista-horario');
+  tbody.innerHTML = "";
+  
+  // Limpiar calendario
+  calendar.removeAllEvents();
+
+  if(!lista || lista.length === 0) {
+     tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:20px; color:#cbd5e1;'>No tienes actividades programadas.</td></tr>";
+     return;
+  }
+
+  // Detectar conflictos
+  const conflictos = detectarConflictos(lista);
+
+  lista.forEach(item => {
+     const tieneConflicto = conflictos.has(item.id);
+     const colorEvento = tieneConflicto ? '#ef4444' : (item.tipo.includes('Instructor') ? '#3b82f6' : '#10b981');
+     
+     // A. Tabla
+     tbody.innerHTML += `
+       <tr style="border-bottom: 1px solid #334155; ${tieneConflicto ? 'background: rgba(239, 68, 68, 0.1);' : ''}">
+         <td style="padding:15px;">
+            <div style="font-weight:bold; color:#f8fafc; font-size:1rem; display:flex; align-items:center; gap:8px;">
+               ${tieneConflicto ? '<span style="font-size:1.2rem;" title="⚠️ Conflicto de horario detectado">⚠️</span>' : ''}
+               ${item.nombre}
+            </div>
+            <div style="color:#94a3b8; font-size:0.85rem;">${item.tipo}</div>
+         </td>
+         <td style="padding:15px;">
+            <span style="background:${colorEvento}; color:white; padding:4px 10px; border-radius:12px; font-size:0.8rem;">
+               ${item.tipo.includes('Instructor') ? '👨‍🏫 Instructor' : '🎓 Alumno'}
+            </span>
+         </td>
+         <td style="padding:15px; text-align:right;">
+             <div style="color:#e2e8f0;">${item.inicio}</div>
+             <div style="color:#64748b; font-size:0.8rem;">a ${item.fin}</div>
+         </td>
+       </tr>
+     `;
+
+     // B. Calendario - Agregar evento si tiene fechas ISO
+     if (item.inicioISO && item.finISO) {
+        calendar.addEvent({
+          title: `${tieneConflicto ? '⚠️ ' : ''}${item.nombre}`,
+          start: item.inicioISO,
+          end: item.finISO,
+          color: colorEvento,
+          extendedProps: {
+            tipo: item.tipo,
+            conflicto: tieneConflicto
+          }
+        });
+     }
+  });
+}
+
+function toggleCalendario(modo) {
+  const vLista = document.getElementById('view-lista-horario');
+  const vCal = document.getElementById('view-calendar-horario');
+  
+  if (modo === 'list') {
+     vLista.classList.remove('hidden');
+     vCal.classList.add('hidden');
+  } else {
+     vLista.classList.add('hidden');
+     vCal.classList.remove('hidden');
+     if(calendar) calendar.updateSize(); // Reajustar tamaño al mostrar
+  }
+}
+
+// --- FUNCIÓN PARA GENERAR BEEP SIN ARCHIVOS ---
+function emitirBeep() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return; // Si el navegador es muy antiguo, no hace nada
+        
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        // Configuración del sonido (Bip agudo y corto)
+        osc.type = "sine"; 
+        osc.frequency.value = 1200; // Frecuencia en Hz (Tono)
+        
+        // Volumen y duración
+        gain.gain.value = 0.1; // Volumen bajo para no aturdir
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15); // Dura solo 0.15 segundos
+        
+    } catch (e) {
+        console.error("Error generando beep:", e);
+    }
+}
+// ==========================================
+// ===  BACKUP BD EN EXCEL (FASE 20)    ===
+// ==========================================
+
+function descargarBackupBD() {
+  // Mostrar el nuevo modal de opciones
+  document.getElementById('modal-backup').classList.remove('hidden');
+}
+
+function iniciarBackupExcel() {
+  const btn = document.querySelector('#modal-backup button[onclick="iniciarBackupExcel()"]');
+  const txtOriginal = btn.innerHTML;
+  btn.innerHTML = "⏳ Generando...";
+  btn.disabled = true;
+
+  google.script.run
+    .withSuccessHandler(res => {
+      btn.innerHTML = txtOriginal;
+      btn.disabled = false;
+      document.getElementById('modal-backup').classList.add('hidden');
+
+      if (res.success) {
+        window.open(res.url, '_blank');
+        showToast("Éxito", `Backup creado en Drive`, "success");
+      } else {
+        showToast("Error", res.message, "error");
+      }
+    })
+    .withFailureHandler(err => {
+      btn.innerHTML = txtOriginal;
+      btn.disabled = false;
+      showToast("Error", "Error técnico: " + err.message, "error");
+    })
+    .generarBackupExcel();
+}
+
+function iniciarBackupJSON() {
+  const btn = document.querySelector('#modal-backup button[onclick="iniciarBackupJSON()"]');
+  const txtOriginal = btn.innerHTML;
+  btn.innerHTML = "⏳ Descargando...";
+  btn.disabled = true;
+
+  google.script.run
+    .withSuccessHandler(res => {
+      btn.innerHTML = txtOriginal;
+      btn.disabled = false;
+      document.getElementById('modal-backup').classList.add('hidden');
+
+      if (res.success) {
+        // Crear Blob y descargar
+        const blob = new Blob([res.json], { type: "application/json" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = res.fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast("Éxito", "Archivo JSON descargado", "success");
+      } else {
+        showToast("Error", res.message, "error");
+      }
+    })
+    .withFailureHandler(err => {
+      btn.innerHTML = txtOriginal;
+      btn.disabled = false;
+      showToast("Error", "Error técnico: " + err.message, "error");
+    })
+    .getDataJSON();
+}
+
+</script>
+
+<script>
+function procesarArchivoRestore(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  // Confirmación extra
+  showModal({
+    title: "⚠️ Restauración Crítica",
+    message: "Esto SOBREESCRIBIRÁ todos los datos actuales con el contenido del archivo. ¿Estás seguro de continuar?",
+    type: "warning",
+    confirmText: "Sí, restaurar datos",
+    cancelText: "Cancelar",
+    onConfirm: () => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const jsonContent = e.target.result;
+          // Validar que sea JSON
+          const data = JSON.parse(jsonContent);
+          
+          showToast("Procesando...", "Restaurando base de datos...", "info");
+          
+          google.script.run
+            .withSuccessHandler(res => {
+              document.getElementById('modal-backup').classList.add('hidden');
+              if (res.success) {
+                showToast("Éxito", "Datos restaurados correctamente. Recargando...", "success");
+                setTimeout(() => location.reload(), 2000);
+              } else {
+                showToast("Error", res.message, "error");
+              }
+            })
+            .withFailureHandler(err => {
+              showToast("Error", "Error crítico al restaurar: " + err.message, "error");
+            })
+            .restaurarDatosJSON(jsonContent); // Enviamos string para parsear en servidor
+            
+        } catch (err) {
+          showToast("Error", "El archivo no es un JSON válido.", "error");
+        }
+      };
+      reader.readAsText(file);
+    },
+    onCancel: () => {
+       input.value = ''; // Limpiar input
+    }
+  });
+}
+// --- CONFIRMAR CÓDIGO (STUDENT LOGIN) ---
+function confirmarCodigoAlumno() {
+    const input = document.getElementById('input-codigo-2fa');
+    const codigo = input.value.trim();
+    const email = window.emailAlumnoLogin || document.getElementById('email').value.trim();
+
+    if(!codigo) return showToast("Atención", "Ingresa el código de 6 dígitos", "warning");
+
+    // UI Feedback
+    const btn = document.querySelector('#modal-codigo-alumno .btn-p');
+    const txtOriginal = btn.innerText;
+    btn.innerText = "Verificando...";
+    btn.disabled = true;
+
+    google.script.run.withSuccessHandler(res => {
+        btn.innerText = txtOriginal;
+        btn.disabled = false;
+
+        if(!res.success) {
+            showToast("Error", res.message, "error");
+            input.classList.add('input-error');
+            input.addEventListener('input', () => input.classList.remove('input-error'), {once:true});
+        } else {
+            // ÉXITO
+            cerrarModalCodigoAlumno();
+            mostrarPortalAlumno(res);
+            showToast("Bienvenido", "Sesión iniciada correctamente", "success");
+            
+            // Ya el backend registra el log en 'validarCodigoYEntrar'
+        }
+    }).validarCodigoYEntrar(email, codigo);
+}
+
+// ======================================================
+// === FUNCIÓN FALTANTE: ABRIR MODAL DE CÓDIGO 2FA   ===
+// ======================================================
+
+function abrirModalCodigoAlumno(email) {
+  // Mostrar el correo en el modal
+  document.getElementById('msg-email-alumno').innerText = email;
+  
+  // Abrir modal
+  document.getElementById('modal-codigo-alumno').classList.remove('hidden');
+  document.getElementById('input-codigo-2fa').value = "";
+  document.getElementById('input-codigo-2fa').focus();
+  
+  // Iniciar cooldown del botón reenviar (30 segundos)
+  const btnReenviar = document.getElementById('btn-reenviar-code');
+  let seg = 30;
+  btnReenviar.disabled = true;
+  btnReenviar.style.color = "#94a3b8";
+  btnReenviar.style.cursor = "not-allowed";
+  btnReenviar.innerText = `Reenviar en ${seg}s`;
+  
+  const timer = setInterval(() => {
+    seg--;
+    btnReenviar.innerText = `Reenviar en ${seg}s`;
+    if(seg <= 0) {
+      clearInterval(timer);
+      btnReenviar.disabled = false;
+      btnReenviar.innerText = "Reenviar Código";
+      btnReenviar.style.color = "#3b82f6";
+      btnReenviar.style.cursor = "pointer";
+    }
+  }, 1000);
+  
+  showToast("Código enviado", "Revisa tu bandeja de entrada", "success");
+}
+
+// --- NAVEGACIÓN PORTAL ALUMNO ---
+function irAMisEventos() {
+  if(window.historialAlumnoTemp && window.historialAlumnoTemp.length > 0) {
+    mostrarPortalAlumno({ nombre: user ? user.nombre : "Alumno", datos: { historial: window.historialAlumnoTemp, perfil: { email: window.emailAlumnoActual } } });
+  }
+  google.script.run.registrarLog(window.emailAlumnoActual || "Alumno", "Navegación", "Mis Cursos", "Alumno consultó sus cursos");
+}
+
+function irADiplomas() {
+  const container = document.getElementById('student-content');
+  if(!container) return;
+  
+  const historial = window.historialAlumnoTemp || [];
+  const aprobados = historial.filter(h => h.estado === "APROBADO");
+  
+  if(aprobados.length === 0) {
+    container.innerHTML = `<div style="text-align:center; padding:60px; color:#94a3b8;">
+      <div style="font-size:4rem; margin-bottom:15px;">🎓</div>
+      <h3 style="color:white;">Sin diplomas disponibles</h3>
+      <p>Aún no has aprobado ningún curso.</p>
+    </div>`;
+    return;
+  }
+
+  let html = `<h3 style="color:white; margin-bottom:20px;">🎓 Mis Diplomas Disponibles</h3>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">`;
+  
+  aprobados.forEach(curso => {
+    html += `<div class="card" style="background:#1e293b; border:1px solid #334155; padding:20px; border-radius:12px;">
+      <h4 style="color:#60a5fa; margin:0 0 10px 0;">${curso.curso}</h4>
+      <p style="color:#94a3b8; font-size:0.9rem;">Nota: <strong style="color:#10b981;">${curso.nota}</strong></p>
+      <p style="color:#94a3b8; font-size:0.9rem;">Estado: <strong style="color:#10b981;">✅ APROBADO</strong></p>
+      <button onclick="descargarDiploma('${curso.idEvento}')" class="btn-p" style="width:100%; margin-top:15px;">
+        📥 Descargar Diploma
+      </button>
+    </div>`;
+  });
+  
+  html += `</div>`;
+  container.innerHTML = html;
+  
+  google.script.run.registrarLog(window.emailAlumnoActual || "Alumno", "Navegación", "Diplomas", "Alumno consultó sus diplomas");
+}
+
+function descargarDiploma(idEvento) {
+  const email = window.emailAlumnoActual;
+  if(!email) return showToast("Error", "Sesión no válida", "error");
+  
+  showToast("Procesando", "Generando diploma...", "info");
+  
+  google.script.run.withSuccessHandler(res => {
+    if(res.success) {
+      const link = document.createElement('a');
+      link.href = "data:application/pdf;base64," + res.base64;
+      link.download = res.fileName;
+      link.click();
+      showToast("Éxito", "Diploma descargado", "success");
+    } else {
+      showToast("Error", res.message, "error");
+    }
+  }).descargarDiplomaAlumno(idEvento, email);
+}
