@@ -11,17 +11,12 @@ Gestionar:
 
 ## Infraestructura propuesta (según sección 9.2.3)
 - **Base de datos:** Google Sheets
-- **Automatización/API:** Google Apps Script (Web App + onFormSubmit opcional)
-- **Dashboard:** Tablas dinámicas/Looker Studio (posterior)
+- **Automatización/API:** Google Apps Script (Web App + onFormSubmit)
 
 ## Estructura
 - `/frontend` -> UI web (prototipo)
-- `/backend` -> Apps Script (API) + especificación de endpoints
-- `/docs` -> Modelo de datos, diagramas y notas
-- `/tests` -> casos de prueba (plantilla)
-- `/scripts` -> utilidades (export/import, seed de datos)
+- `/backend` -> Base de datos en XLSX
+- `/enlaceRecursos` -> https://drive.google.com/drive/folders/1Th_eAFZygPB6hl5mphQjVsipQo2nlA4-?usp=sharing
+- `/enlaceAplicacion` -> https://script.google.com/macros/s/AKfycby8_hj_NMQhHodihDiXJ0NMpmKq_yCm1HiTHeZ0vSILUSHjqi5oZU5UfPPkgxsV-4NC/exec
 
-## Variables de entorno (referencia)
-- Ver `backend/.env.example` (si usas un proxy local) y `backend/appsscript.properties.example`
 
-> Nota: este repo es un **avance temprano** para Fase 0/1. La implementación funcional completa se desarrolla en Fase 2.
