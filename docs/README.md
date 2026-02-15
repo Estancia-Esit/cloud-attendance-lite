@@ -7,8 +7,7 @@
 ## Grupo SN-21
 
 ### Integrantes y roles
-- Francisco Elías Cisneros Castro - Líder del Proyecto Jr.
-- Francisco Elías Cisneros Castro - Analista de Procesos Académicos Jr.
+- Francisco Elías Cisneros Castro - Líder del Proyecto Jr. / Analista de Procesos Académicos Jr.
 - Anibal Ernesto Martínez Cruz - Desarrollador Fullstack Jr.
 - Gustavo Adolfo Reyes Vanegas - QA / Documentador Técnico Jr.
 - David Mauricio González Estupinián - Ingeniero Cloud Jr.
