@@ -51,7 +51,9 @@ Gestionar:
 - **Automatización:** Google Apps Script (Web App + onFormSubmit)
 
 ### Estructura
+- `/backend` -> Reglas de negocio de la aplicación
+- `/certificados` -> Plantilla de certificados
 - `/db` -> Base de datos
 - `/docs` -> Documentación del proyecto
 - `/frontend` -> UI web (prototipo)
-- `/tests` -> Base de datos en XLSX
+- `/tests` -> Diferentes archivos de pruebas usados durante el desarrollo
