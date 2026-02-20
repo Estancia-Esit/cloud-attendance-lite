@@ -20,3 +20,4 @@ graph TD
     
     L -- Sí --> M[Email: Grabación + Oferta / CTA]
     L -- No --> N[Email: 'Te extrañamos' + Grabación por tiempo limitado]
+```
