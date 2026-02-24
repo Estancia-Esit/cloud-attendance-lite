@@ -126,6 +126,15 @@ function crearEventoServidor(datos) {
   if (new Date(datos.inicio) >= new Date(datos.fin)) return { success: false, message: "Error: La fecha de inicio debe ser anterior a la de fin." };
 
   sheetE.appendRow([nuevoId, datos.nombre, new Date(datos.inicio), datos.tipo, datos.responsable.toLowerCase().trim(), datos.cupo, new Date(datos.fin)]);
+  
+  // --- NOTIFICAR AL DOCENTE ---
+  registrarNotificacion(
+    datos.responsable.toLowerCase().trim(), 
+    `Se te ha asignado un nuevo curso: ${datos.nombre}`, 
+    "EVENTO_NUEVO", 
+    nuevoId
+  );
+
   return { success: true, message: "Evento creado exitosamente" };
 }
 
@@ -866,6 +875,36 @@ function testDiploma() {
 }
 // --- MÓDULO DE CALIFICACIONES Y DIPLOMAS (LMS) ---
 
+/**
+ * Obtiene el peso total de las actividades de un evento, opcionalmente excluyendo una (para edición).
+ */
+function getPesoTotalActividades(idEvento, idActividadExcluir = null) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("Actividades");
+    if (!sheet) return 0;
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return 0;
+    
+    let suma = 0;
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      // Col 0: ID_Actividad, Col 1: ID_Evento, Col 4: Peso
+      if (row[1].toString().trim() === idEvento.toString().trim()) {
+        if (idActividadExcluir && row[0].toString().trim() === idActividadExcluir.toString().trim()) {
+          continue;
+        }
+        suma += parseFloat(row[4]) || 0;
+      }
+    }
+    return parseFloat(suma.toFixed(2));
+  } catch(e) {
+    Logger.log("Error en getPesoTotalActividades: " + e.message);
+    return 0;
+  }
+}
+
 // 1. CREAR UNA NUEVA TAREA
 function crearTarea(datos) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -873,10 +912,21 @@ function crearTarea(datos) {
   if(!sheet) return { success: false, message: "Falta hoja Actividades" };
   
   // --- VALIDACIONES SERVIDOR ---
-  if (datos.peso < 0) return { success: false, message: "Error: El peso de la actividad no puede ser negativo." };
+  const pesoNum = parseFloat(datos.peso) || 0;
+  if (pesoNum < 0) return { success: false, message: "Error: El peso de la actividad no puede ser negativo." };
+
+  const pesoActual = getPesoTotalActividades(datos.idEvento);
+  const faltante = 100 - pesoActual;
+
+  if (pesoNum > faltante) {
+    return { 
+      success: false, 
+      message: `Error: No se puede crear. El peso (${pesoNum}%) excede el límite disponible (${faltante.toFixed(1)}%).` 
+    };
+  }
 
   const id = "ACT-" + (sheet.getLastRow() + 1) + Math.floor(Math.random()*100);
-  sheet.appendRow([id, datos.idEvento, datos.titulo, datos.desc, datos.peso]);
+  sheet.appendRow([id, datos.idEvento, datos.titulo, datos.desc, pesoNum]);
   
   return { success: true, message: "Actividad creada correctamente" };
 }
@@ -1307,6 +1357,29 @@ function eliminarParticipanteDirecto(id) {
   }
   return { success: false, message: "No se pudo eliminar." };
 }
+
+// ELIMINAR PARTICIPANTES EN LOTE
+function eliminarParticipantesMasivo(ids) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const shP = ss.getSheetByName("Participantes");
+  const data = shP.getDataRange().getValues();
+  
+  // Encontrar las filas a eliminar (de abajo hacia arriba para no desplazar índices)
+  const filasAEliminar = [];
+  for (let i = 1; i < data.length; i++) {
+    if (ids.indexOf(data[i][0].toString()) !== -1) {
+      filasAEliminar.push(i + 1); // fila en la hoja (1-indexed)
+    }
+  }
+  
+  // Eliminar de abajo hacia arriba
+  filasAEliminar.sort((a, b) => b - a);
+  for (const fila of filasAEliminar) {
+    shP.deleteRow(fila);
+  }
+  
+  return { success: true, message: filasAEliminar.length + " alumno(s) eliminados correctamente." };
+}
 // --- OBTENER DATOS PARA EL LIBRO DE CALIFICACIONES (GRADEBOOK) ---
 function getGradebookData(idEvento) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1721,10 +1794,22 @@ function editarActividadServidor(datos) {
   for(let i=1; i<data.length; i++) {
     if(data[i][0].toString() === datos.id.toString()) {
       // --- VALIDACIONES SERVIDOR ---
-      if (datos.peso < 0) return { success: false, message: "Error: El peso de la actividad no puede ser negativo." };
+      const pesoNum = parseFloat(datos.peso) || 0;
+      if (pesoNum < 0) return { success: false, message: "Error: El peso de la actividad no puede ser negativo." };
+
+      const idEvento = data[i][1];
+      const pesoOtros = getPesoTotalActividades(idEvento, datos.id);
+      const faltante = 100 - pesoOtros;
+
+      if (pesoNum > faltante) {
+        return { 
+          success: false, 
+          message: `Error: No se puede actualizar. El peso (${pesoNum}%) excede el límite disponible (${faltante.toFixed(1)}%).` 
+        };
+      }
 
       // Actualizamos: Título (Col 2), Desc (Col 3), Peso (Col 4)
-      sh.getRange(i+1, 3, 1, 3).setValues([[datos.titulo, datos.desc, datos.peso]]);
+      sh.getRange(i+1, 3, 1, 3).setValues([[datos.titulo, datos.desc, pesoNum]]);
       return { success: true, message: "Actividad actualizada correctamente." };
     }
   }
@@ -2850,5 +2935,79 @@ function restaurarDatosJSON(jsonContent) {
   } catch (e) {
     registrarLog("Sistema", "Error Restore", "Sistema", `Fallo crítico al restaurar JSON: ${e.message}`);
     return { success: false, message: "Error al restaurar: " + e.message };
+  }
+}
+
+// ==========================================
+// === SISTEMA DE NOTIFICACIONES (gs.txt) ===
+// ==========================================
+
+function registrarNotificacion(email, mensaje, tipo = "INFO", refId = "") {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sh = ss.getSheetByName("Notificaciones");
+    if (!sh) {
+       sh = ss.insertSheet("Notificaciones");
+       sh.appendRow(["ID", "Fecha", "EmailDestino", "Mensaje", "Tipo", "Estado", "ID_Referencia"]);
+    }
+    
+    const id = "NOT-" + Date.now() + Math.floor(Math.random()*100);
+    sh.appendRow([id, new Date(), email, mensaje, tipo, "Pendiente", refId]);
+    return true;
+  } catch(e) {
+    Logger.log("Error en registrarNotificacion: " + e.message);
+    return false;
+  }
+}
+
+function getNotificacionesUsuario(email) {
+  try {
+    if (!email) return [];
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sh = ss.getSheetByName("Notificaciones");
+    if (!sh) return [];
+    
+    const data = sh.getDataRange().getValues();
+    if (data.length <= 1) return [];
+    
+    const emailLower = email.toLowerCase().trim();
+    // ID(0), Fecha(1), Email(2), Msg(3), Tipo(4), Estado(5), Ref(6)
+    return data.slice(1)
+      .filter(row => {
+        const rowEmail = (row[2] || "").toString().toLowerCase().trim();
+        const rowEstado = (row[5] || "").toString().trim();
+        return rowEmail === emailLower && rowEstado === "Pendiente";
+      })
+      .map(row => ({
+        id: row[0],
+        fecha: row[1] instanceof Date ? row[1].toISOString() : row[1].toString(),
+        mensaje: row[3],
+        tipo: row[4],
+        estado: row[5],
+        refId: row[6]
+      }))
+      .sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
+  } catch(e) {
+    Logger.log("Error en getNotificacionesUsuario: " + e.message);
+    return [];
+  }
+}
+
+function marcarNotificacionLeida(idNotif) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sh = ss.getSheetByName("Notificaciones");
+    if (!sh) return { success: false };
+    
+    const data = sh.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0].toString() === idNotif.toString()) {
+        sh.getRange(i + 1, 6).setValue("Leída");
+        return { success: true };
+      }
+    }
+    return { success: false, message: "Notificación no encontrada" };
+  } catch(e) {
+    return { success: false, message: e.message };
   }
 }
