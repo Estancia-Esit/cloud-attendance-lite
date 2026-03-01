@@ -14,6 +14,8 @@
     margin: 0; 
     background: #f0f2f5; 
     color: #1f2937;
+    overflow-x: hidden;
+    max-width: 100vw;
   }
   
   .hidden { display: none !important; }
@@ -131,6 +133,84 @@
     transform: translateY(0);
   }
 
+  /* Botón de Google Estilo Oficial */
+  .google-style-btn {
+    background-color: #ffffff;
+    color: #3c4043;
+    border: 1px solid #dadce0;
+    border-radius: 20px;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Google Sans', 'Inter', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color .2s, box-shadow .2s;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .google-style-btn:hover {
+    background-color: #f8f9fa;
+    box-shadow: 0 1px 2px 0 rgba(60,64,67,0.30), 0 1px 3px 1px rgba(60,64,67,0.15);
+  }
+
+  .google-style-btn:active {
+    background-color: #f1f3f4;
+  }
+
+  /* --- REDISEÑO GATEWAY (login2.png) --- */
+  .gateway-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+  }
+
+  .btn-gateway {
+    background: white;
+    color: #1e3a8a; /* Azul oscuro para texto */
+    border: none;
+    border-radius: 12px;
+    padding: 18px 25px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+
+  .btn-gateway:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+    background: #f8fafc;
+  }
+
+  .btn-gateway:active {
+    transform: translateY(0);
+  }
+
+  .btn-gateway img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .back-to-selection {
+    color: rgba(255,255,255,0.8);
+    font-size: 0.85rem;
+    text-decoration: underline;
+    cursor: pointer;
+    margin-top: 1.5rem;
+    display: inline-block;
+  }
+
   .forgot-link {
     color: rgba(255, 255, 255, 0.9);
     margin-top: 2.5rem;
@@ -164,6 +244,13 @@
 
   /* --- ESTILOS DEL PANEL INTERNO --- */
   
+  .tabla-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    display: block;
+  }
+
   .stat-card {
     flex: 1;
     background: var(--card-dark);
@@ -186,6 +273,91 @@
     justify-content: space-between; 
     align-items: center;
     border-bottom: 1px solid #334155; 
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* SISTEMA DE NOTIFICACIONES */
+  .bell-container {
+    position: relative;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 5px;
+    transition: transform 0.2s;
+  }
+
+  .bell-container:hover {
+    transform: scale(1.1);
+  }
+
+  .unread-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #ef4444;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: bold;
+    min-width: 14px;
+    text-align: center;
+    line-height: 1;
+    border: 2px solid var(--card-dark);
+  }
+
+  .notif-item {
+    padding: 12px;
+    border-bottom: 1px solid #e2e8f0;
+    transition: background 0.2s;
+  }
+
+  .notif-item:last-child {
+    border-bottom: none;
+  }
+
+  .notif-item:hover {
+    background: #f8fafc;
+  }
+
+  .notif-msg {
+    color: #334155;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  .notif-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .notif-date {
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+
+  .btn-read {
+    background: none;
+    border: none;
+    color: #3b82f6;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  .btn-read:hover {
+    background: rgba(59, 130, 246, 0.1);
   }
   
   /* Grid Eventos */
@@ -552,15 +724,18 @@
     display: block;
   }
 
-  /* 4. Los botones: Hacer que ocupen el 48% (2 por fila) */
+  /* 4. Los botones acomodados como grid u ocultando su texto */
   .nav-actions button {
-    flex: 1 1 45%; /* Crecer y ocupar casi la mitad */
-    font-size: 0.75rem; /* Letra un poco más chica */
-    padding: 10px 5px;
-    white-space: nowrap;
+    font-size: 1.2rem; /* Icono más grande (emoji) */
+    padding: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
+    flex: 0 1 auto; /* No forzar a ocupar el 45% */
+  }
+
+  .nav-actions button .btn-text {
+    display: none; /* Oculta el texto, deja solo el emoji */
   }
 
   /* 5. El botón salir: Que ocupe todo el ancho (rojo) */
@@ -753,39 +928,108 @@
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  max-width: 400px;
 }
 
 .toast {
-  min-width: 300px;
-  background: #1e293b; /* Fondo oscuro */
-  color: white;
-  padding: 15px 20px;
+  background: white;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transform: translateX(120%); /* Oculto a la derecha */
-  transition: transform 0.3s ease-out;
-  border-left: 5px solid #3b82f6; /* Azul por defecto */
+  overflow: hidden;
+  position: relative;
+  transform: translateX(120%);
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid #e2e8f0;
+  min-width: 320px;
 }
 
 .toast.show {
   transform: translateX(0);
 }
 
-.toast.success { border-left-color: #10b981; } /* Verde */
-.toast.error { border-left-color: #ef4444; }   /* Rojo */
-.toast.warning { border-left-color: #f59e0b; } /* Naranja */
-
-.toast-content {
+.toast-sidebar {
+  width: 48px;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  padding-top: 16px;
+  flex-shrink: 0;
 }
 
-.toast-title { font-weight: bold; font-size: 0.95rem; margin-bottom: 2px; }
-.toast-msg { font-size: 0.85rem; color: #cbd5e1; }
+.toast-body {
+  padding: 16px;
+  padding-right: 40px;
+  flex-grow: 1;
+}
+
+.toast-title {
+  display: block;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.toast-msg {
+  display: block;
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.toast-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #94a3b8;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.toast-close:hover {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* Tipos de Toast */
+.toast.info { border-color: #bfdbfe; }
+.toast.info .toast-sidebar { background-color: #dbeafe; color: #2563eb; }
+.toast.info .toast-title { color: #1e40af; }
+
+.toast.success { border-color: #bbf7d0; }
+.toast.success .toast-sidebar { background-color: #dcfce7; color: #16a34a; }
+.toast.success .toast-title { color: #166534; }
+
+.toast.warning { border-color: #fef3c7; }
+.toast.warning .toast-sidebar { background-color: #fef3c7; color: #d97706; }
+.toast.warning .toast-title { color: #92400e; }
+
+.toast.error { border-color: #fecaca; }
+.toast.error .toast-sidebar { background-color: #fee2e2; color: #dc2626; }
+.toast.error .toast-title { color: #991b1b; }
+
+.btn-toast-action {
+  margin-top: 12px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.toast.info .btn-toast-action { background: #1e40af; color: white; }
+.toast.info .btn-toast-action:hover { background: #1e3a8a; }
+
+.toast.success .btn-toast-action { background: #166534; color: white; }
+.toast.success .btn-toast-action:hover { background: #14532d; }
 /* --- ESTILOS DEL CONTADOR EN VIVO --- */
 .contador-container {
   display: flex;
@@ -864,9 +1108,86 @@
   color: white;
 }
 
-.btn-view.active {
-  background: #3b82f6;
-  color: white;
+
+/* --- ESTILOS DE ENCUESTAS (ESTRELLAS) --- */
+/* --- ESTILOS DE ENCUESTAS (ESTRELLAS PREMIUM) --- */
+.survey-category {
+  margin-bottom: 25px;
+  text-align: center;
+  background: #f8fafc;
+  padding: 15px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s;
+}
+
+.survey-category:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.survey-category label {
+  display: block;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
+}
+
+.star-rating {
+  font-size: 2.5rem;
+  color: #e2e8f0;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.star {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-block;
+}
+
+.star:hover {
+  transform: scale(1.35) rotate(5deg);
+  color: #fbbf24;
+}
+
+.star.active {
+  color: #f59e0b;
+  transform: scale(1.1);
+  text-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+}
+
+.star.hover-active {
+  color: #fbbf24;
+  opacity: 0.8;
+}
+
+.rating-label {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-top: 8px;
+  height: 1rem;
+}
+
+#encuesta-comentario {
+  border: 1px solid #cbd5e1;
+  width: 100%;
+  border-radius: 10px;
+  padding: 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  background: white;
+  resize: none;
+  transition: border-color 0.2s;
+}
+
+#encuesta-comentario:focus {
   border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 </style>
