@@ -3,6 +3,9 @@
 // --- ESTILOS Y HTML PARA EL MODAL DE ENVÍO MASIVO ---
 // Inyectamos esto dinámicamente para no tocar tu HTML principal
 document.addEventListener('DOMContentLoaded', function() {
+  // Verificar notificaciones al inicio
+  setTimeout(verificarNotificaciones, 2000);
+  
   const modalHTML = `
   <div id="modal-masivo" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
     <div style="background:#1e293b; padding:25px; border-radius:10px; width:500px; max-width:90%; border:1px solid #334155; color:white; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
@@ -17,8 +20,8 @@ document.addEventListener('DOMContentLoaded', function() {
         <p style="text-align:right; font-weight:bold;">Total a enviar: <span id="total-envio" style="color:#10b981;">0</span></p>
         
         <div style="text-align:right; margin-top:20px;">
-          <button onclick="cerrarModalMasivo()" style="padding:8px 15px; background:transparent; color:#94a3b8; border:none; cursor:pointer; margin-right:10px;">Cancelar</button>
-          <button onclick="ejecutarEnvioMasivo()" style="padding:8px 20px; background:#3b82f6; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Confirmar y Enviar 📨</button>
+          <button onclick="cerrarModalMasivo()" style="padding:8px 15px; background:transparent; color:#94a3b8; border:none; cursor:pointer; margin-right:10px;" title="Cancelar">❌ <span class="btn-text">Cancelar</span></button>
+          <button onclick="ejecutarEnvioMasivo()" style="padding:8px 20px; background:#3b82f6; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;" title="Confirmar y Enviar">📨 <span class="btn-text">Confirmar y Enviar</span></button>
         </div>
       </div>
 
@@ -50,15 +53,15 @@ document.addEventListener('DOMContentLoaded', function() {
         <input type="text" id="input-codigo-2fa" placeholder="123456" 
                style="font-size: 1.5rem; text-align: center; letter-spacing: 5px; font-weight: bold; color: #334155;" maxlength="6">
       </div>
-      <button onclick="confirmarCodigoAlumno()" class="btn-p" style="width:100%; margin-top:10px;">Verificar y Entrar</button>
+      <button onclick="confirmarCodigoAlumno()" class="btn-p" style="width:100%; margin-top:10px;" title="Verificar y Entrar">✅ <span class="btn-text">Verificar y Entrar</span></button>
       <div style="margin-top:20px; font-size:0.85rem; color:#64748b;">
         ¿No recibiste el código? <br>
         <button id="btn-reenviar-code" onclick="reenviarCodigo()" disabled 
-                style="background:none; border:none; color:#94a3b8; cursor:not-allowed; margin-top:5px; font-weight:bold;">
-            Reenviar en 30s
+                style="background:none; border:none; color:#94a3b8; cursor:not-allowed; margin-top:5px; font-weight:bold;" title="Reenviar">
+            <span class="btn-text">Reenviar en 30s</span>
         </button>
       </div>
-      <button onclick="cerrarModalCodigoAlumno()" class="btn-back" style="width:100%; margin-top:20px; border:none;">Cancelar</button>
+      <button onclick="cerrarModalCodigoAlumno()" class="btn-back" style="width:100%; margin-top:20px; border:none;" title="Cancelar">❌ <span class="btn-text">Cancelar</span></button>
     </div>
   </div>
   `;
@@ -85,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <tbody id="tabla-detalle-asistencia"></tbody>
           </table>
         </div>
-        <button onclick="document.getElementById('modal-asistencia-alumno').classList.add('hidden')" class="btn-back" style="width:100%; margin-top:15px;">Cerrar</button>
+        <button onclick="document.getElementById('modal-asistencia-alumno').classList.add('hidden')" class="btn-back" style="width:100%; margin-top:15px;" title="Cerrar">❌ <span class="btn-text">Cerrar</span></button>
       </div>
     </div>
     `);
@@ -108,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <tbody id="tabla-detalle-notas"></tbody>
           </table>
         </div>
-        <button onclick="document.getElementById('modal-detalle-alumno').classList.add('hidden')" class="btn-back" style="width:100%; margin-top:15px;">Cerrar</button>
+        <button onclick="document.getElementById('modal-detalle-alumno').classList.add('hidden')" class="btn-back" style="width:100%; margin-top:15px;" title="Cerrar">❌ <span class="btn-text">Cerrar</span></button>
       </div>
     </div>
     `);
@@ -123,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <h3 id="modal-title" style="margin: 0 0 10px 0; color: #1e293b;">Atención</h3>
         <p id="modal-message" style="color: #64748b; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5;"></p>
         <div id="modal-actions" style="display: flex; gap: 10px; justify-content: center;">
-          <button onclick="document.getElementById('custom-modal').classList.add('hidden')" class="btn-p">Aceptar</button>
+          <button onclick="document.getElementById('custom-modal').classList.add('hidden')" class="btn-p" title="Aceptar">✅ <span class="btn-text">Aceptar</span></button>
         </div>
       </div>
     </div>
@@ -170,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
            <input type="file" id="input-restore-json" accept=".json" style="display:none" onchange="procesarArchivoRestore(this)">
         </div>
 
-        <button onclick="document.getElementById('modal-backup').classList.add('hidden')" class="btn-back" style="width: 100%; margin-top: 25px;">Cancelar</button>
+        <button onclick="document.getElementById('modal-backup').classList.add('hidden')" class="btn-back" style="width: 100%; margin-top: 25px;" title="Cancelar">❌ <span class="btn-text">Cancelar</span></button>
       </div>
     </div>
     `);
@@ -186,36 +189,53 @@ document.addEventListener('DOMContentLoaded', function() {
        localStorage.removeItem('sesion_usuario');
      }
   }
+
+  // --- AUTO-LOGIN SI VIENE DE SELECCIONAR CUENTA ---
+  if(window.G_LOGIN_MODE === "google_v2" && window.G_LOGIN_TOKEN) {
+    const banner = document.getElementById('login-status-banner');
+    const msg = document.getElementById('login-msg');
+    banner.classList.remove('hidden');
+    msg.innerText = "Sincronizando cuenta seleccionada...";
+    google.script.run.withSuccessHandler(res => {
+      resetLoginUI();
+      if(res.success) {
+        iniciarSesionExitosa(res, true);
+      } else {
+        showToast("Acceso Denegado", res.message, "error");
+      }
+    }).verificarLoginConToken(window.G_LOGIN_TOKEN);
+  }
 });
 // --- VARIABLES GLOBALES ---
 // Variable para recordar en qué curso estamos metidos
 let cursoActivoID = "";
 let modoAlumno = false; // false = Admin/Docente, true = Alumno
 
-// 1. FUNCIÓN PARA ALTERNAR DISEÑO (Admin <-> Alumno)
-function alternarModoLogin() {
-  modoAlumno = !modoAlumno; // Invertir estado
+// 1. MANEJO DE VISTAS Y TRANSICIONES (REDISEÑO)
+function mostrarLoginAlumno() {
+  document.getElementById('gateway-selection').classList.add('hidden');
+  document.getElementById('login-form-container').classList.remove('hidden');
+  document.getElementById('login-title').innerText = "Portal del Estudiante";
   
-  const titulo = document.getElementById('login-title');
-  const passContainer = document.getElementById('pass-container');
-  const btnText = document.getElementById('btn-text');
-  const toggleLink = document.getElementById('toggle-login-mode');
-  const linkRecuperar = document.getElementById('link-recuperar');
+  // Forzar modo alumno (sin contraseña)
+  modoAlumno = true;
+  document.getElementById('pass-container').classList.add('hidden');
+  document.getElementById('link-recuperar').classList.add('hidden');
+  document.getElementById('email').placeholder = "Ingresa tu correo institucional";
+}
 
-  if (modoAlumno) {
-    // --- MODO ALUMNO ---
-    titulo.innerText = "Portal del Estudiante";
-    passContainer.style.display = "none"; // Ocultar contraseña
-    btnText.innerText = "Consultar Notas";
-    toggleLink.innerText = "🔐 Soy Administrativo / Docente";
-    linkRecuperar.style.display = "none"; // Alumnos no tienen pass que recuperar
+function volverASeleccion() {
+  document.getElementById('login-form-container').classList.add('hidden');
+  document.getElementById('gateway-selection').classList.remove('hidden');
+  document.getElementById('login-title').innerText = "Acceso Administrativo";
+}
+
+// MANTENER POR COMPATIBILIDAD SI SE USA EN OTROS LADOS, pero la navegación principal es vía Gateway
+function alternarModoLogin() {
+  if (document.getElementById('gateway-selection').classList.contains('hidden')) {
+    volverASeleccion();
   } else {
-    // --- MODO ADMIN ---
-    titulo.innerText = "Acceso Administrativo";
-    passContainer.style.display = "flex"; // Mostrar contraseña
-    btnText.innerText = "Iniciar Sesión";
-    toggleLink.innerText = "🎓 ¿Eres Alumno? Ingresa aquí";
-    linkRecuperar.style.display = "block";
+    mostrarLoginAlumno();
   }
 }
 
@@ -304,6 +324,30 @@ function procesarLogin() {
   }
 }
 
+// 3. LOGIN NATIVO CON GOOGLE (Versión Robusta con Selector Real)
+function loginNativoGoogle() {
+  const banner = document.getElementById('login-status-banner');
+  const msg = document.getElementById('login-msg');
+
+  banner.classList.remove('hidden');
+  msg.innerText = "Redirigiendo a selector de cuentas...";
+
+  google.script.run.withSuccessHandler(url => {
+    // EL SECRETO: Usar el flujo de OAuth2 manual para forzar el selector y recibir el token POST
+    const clientId = "497920139183-9pkfeemjplk0k5kip60ofnbtbsuup121.apps.googleusercontent.com";
+    const authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" +
+      "client_id=" + clientId +
+      "&redirect_uri=" + encodeURIComponent(url) +
+      "&response_type=id_token" +
+      "&scope=openid%20email%20profile" +
+      "&response_mode=form_post" +
+      "&prompt=select_account" +
+      "&nonce=" + Math.random().toString(36).substring(2);
+
+    window.top.location.href = authUrl;
+  }).getScriptUrl();
+}
+
 // Helper para iniciar sesión (Login o Restore)
 function iniciarSesionExitosa(datosUsuario, guardar) {
    user = datosUsuario;
@@ -335,6 +379,7 @@ function iniciarSesionExitosa(datosUsuario, guardar) {
    }
 
    irAEventos();
+   verificarNotificaciones();
 }
 
 
@@ -584,6 +629,7 @@ function cargarEventos() {
 
   function validarCamposObligatorios(campos) {
     let errores = 0;
+    let errorNombre = false;
     campos.forEach(c => {
       const el = document.getElementById(c.id);
       if(!el) return;
@@ -600,6 +646,15 @@ function cargarEventos() {
          // Regex simple para email
          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
          if(!emailRegex.test(valor)) valido = false;
+      } else if (c.tipo === 'name') {
+         // Solo letras, tildes, ñ y espacios
+         const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+         if(valor === "") {
+           valido = false;
+         } else if(!nameRegex.test(valor)) {
+           valido = false;
+           errorNombre = true; // Marcamos que hubo un error de caracteres en nombre
+         }
       }
       
       if(!valido) {
@@ -611,7 +666,8 @@ function cargarEventos() {
     });
     
     if(errores > 0) {
-      showToast("Atención", "Por favor completa los campos obligatorios marcados en rojo.", "warning");
+      const msg = errorNombre ? "No se permiten caracteres especiales ni números en el nombre." : "Por favor completa los campos obligatorios marcados en rojo.";
+      showToast("Atención", msg, "warning");
       return false;
     }
     return true;
@@ -629,6 +685,15 @@ function cargarEventos() {
     
     if(!validarCamposObligatorios(campos)) return;
 
+    // --- VALIDACIÓN: CUPO MÍNIMO DE 1 ALUMNO ---
+    const cupoVal = parseInt(document.getElementById('ev-cupo').value);
+    if (isNaN(cupoVal) || cupoVal < 1) {
+      showToast("Atención", "El cupo debe ser de al menos 1 alumno.", "warning");
+      document.getElementById('ev-cupo').classList.add('input-error');
+      document.getElementById('ev-cupo').addEventListener('input', function() { this.classList.remove('input-error'); }, {once:true});
+      return;
+    }
+
     const datos = {
       id: currentEditId,
       nombre: document.getElementById('ev-nombre').value,
@@ -642,13 +707,29 @@ function cargarEventos() {
 
     const accionDesc = editMode ? "Editó el evento: " : "Creó el evento: ";
 
-    google.script.run.withSuccessHandler(res => {
-      if(res.success) {
-        google.script.run.registrarLog(user.email, editMode ? "Editar" : "Crear", "Eventos", accionDesc + datos.nombre);
-        showToast("Éxito", res.message, "success");
-        irAEventos();
-      }
-    })[editMode ? 'editarEventoServidor' : 'crearEventoServidor'](datos);
+    const btn = document.getElementById('btn-guardar-ev');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+    btn.disabled = true;
+
+    google.script.run
+      .withSuccessHandler(res => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        if(res.success) {
+          google.script.run.registrarLog(user.email, editMode ? "Editar" : "Crear", "Eventos", accionDesc + datos.nombre);
+          showToast("Éxito", res.message, "success");
+          irAEventos();
+        } else {
+          showToast("Error", res.message, "error");
+        }
+      })
+      .withFailureHandler(err => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        showToast("Error de conexión", "No se pudo guardar: " + err, "error");
+      })
+      [editMode ? 'editarEventoServidor' : 'crearEventoServidor'](datos);
   }
 
   function confirmarEliminar(id) {
@@ -668,6 +749,7 @@ function cargarEventos() {
     document.getElementById('ev-nombre').value = "";
     document.getElementById('ev-inicio').value = "";
     document.getElementById('ev-fin').value = "";
+    document.getElementById('ev-tipo').value = "Taller";
     document.getElementById('ev-cupo').value = "";
     document.getElementById('ev-responsable').value = "";
   }
@@ -675,7 +757,7 @@ function cargarEventos() {
   // --- INSCRIPCIÓN Y ASISTENCIA ---
   function guardarNuevoParticipante() {
     if(!validarCamposObligatorios([
-      {id:'p-nombre', tipo:'text'},
+      {id:'p-nombre', tipo:'name'},
       {id:'p-correo', tipo:'email'}
     ])) return;
 
@@ -685,14 +767,36 @@ function cargarEventos() {
       idEvento: document.getElementById('p-evento-select').value,
       usuarioActor: user.email
     };
-    google.script.run.withSuccessHandler(res => {
-      if(res.success) {
-        showToast("Éxito", res.message, "success");
-        irAEventos();
-      } else {
-        showToast("Error", res.message, "error");
-      }
-    }).agregarParticipante(datos, user.rol);
+
+    const btn = document.querySelector('#gestion-participantes .btn-p');
+    let originalText = "Guardar Alumno";
+    if (btn) {
+       originalText = btn.innerHTML;
+       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+       btn.disabled = true;
+    }
+
+    google.script.run
+      .withSuccessHandler(res => {
+        if (btn) {
+           btn.innerHTML = originalText;
+           btn.disabled = false;
+        }
+        if(res.success) {
+          showToast("Éxito", res.message, "success");
+          irAEventos();
+        } else {
+          showToast("Error", res.message, "error");
+        }
+      })
+      .withFailureHandler(err => {
+        if (btn) {
+           btn.innerHTML = originalText;
+           btn.disabled = false;
+        }
+        showToast("Error", "Error de conexión: " + err, "error");
+      })
+      .agregarParticipante(datos, user.rol);
   }
 
   // --- SWITCHES CON ESTADO VISUAL (MODIFICADO) ---
@@ -712,7 +816,7 @@ function cargarEventos() {
     
     cargarAsistenciaDelDia();
   }
-function cargarAsistenciaDelDia() {
+function cargarAsistenciaDelDia(isSilent = false) {
   const fechaInput = document.getElementById('fecha-sesion-asist');
   // Usamos la fecha del input o la de hoy si está vacío
   let fechaSesionActual = fechaInput ? fechaInput.value : new Date().toISOString().split('T')[0];
@@ -720,7 +824,7 @@ function cargarAsistenciaDelDia() {
   const tbody = document.getElementById('lista-alumnos');
   const btnGuardar = document.querySelector('#asistencia-panel button.btn-p'); // Ajusta selector si es necesario
 
-  if(tbody) tbody.innerHTML = "<tr><td colspan='2' style='text-align:center; padding:20px; color:#94a3b8;'>Cargando lista...</td></tr>";
+  if(tbody && !isSilent) tbody.innerHTML = "<tr><td colspan='2' style='text-align:center; padding:20px; color:#94a3b8;'>Cargando lista...</td></tr>";
 
   google.script.run.withSuccessHandler(res => {
     const alumnos = res.participantes; // Array de alumnos
@@ -812,12 +916,16 @@ function cargarAsistenciaDelDia() {
       </tr>
     `}).join('');
     
-    // Insertar HTML en la tabla
-    if(tbody) tbody.innerHTML = htmlFilas;
+    // Insertar HTML en la tabla (solo si NO es silencioso)
+    // En modo silencioso (post-QR), NO sobrescribimos la tabla porque:
+    // 1. El QR ya actualizó el switch/label visualmente de forma optimista.
+    // 2. Si sobreescribimos con datos del servidor, podríamos mostrar "Ausente"
+    //    por un desfase de timezone o latencia, lo que causaría que guardarAsistencia()
+    //    luego borre los registros QR del servidor sin re-insertarlos.
+    if (!isSilent && tbody) tbody.innerHTML = htmlFilas;
 
-    // --- AQUÍ ESTÁ EL CAMBIO CLAVE ---
-    // Actualizamos el contador apenas se cargan los datos
-    if (typeof actualizarContadorDesdeDatos === 'function') {
+    // Solo actualizamos el contador desde datos si NO es silencioso.
+    if (!isSilent && typeof actualizarContadorDesdeDatos === 'function') {
         actualizarContadorDesdeDatos(alumnos);
     }
 
@@ -973,6 +1081,8 @@ function verQR(idParticipante, idEvento, nombre) {
   function irAGestion() {
     ocultarSecciones();
     document.getElementById('gestion-participantes').classList.remove('hidden');
+    document.getElementById('p-nombre').value = "";
+    document.getElementById('p-correo').value = "";
     google.script.run.withSuccessHandler(evs => {
       document.getElementById('p-evento-select').innerHTML = evs.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
     }).getEventos(user.email, user.rol);
@@ -1031,6 +1141,11 @@ function verQR(idParticipante, idEvento, nombre) {
 
   function abrirModalUsuario() {
     document.getElementById('u-email').disabled = false;
+    document.getElementById('u-nombre').value = "";
+    document.getElementById('u-email').value = "";
+    document.getElementById('u-pass').value = "";
+    document.getElementById('u-rol').value = "docente";
+    document.getElementById('titulo-modal-u').innerText = "Nuevo Usuario";
     document.getElementById('modal-usuario').classList.remove('hidden');
   }
 
@@ -1243,19 +1358,101 @@ function verQR(idParticipante, idEvento, nombre) {
 
   function iniciarEscaner() {
     document.getElementById('modal-scanner').classList.remove('hidden');
-    document.getElementById('scan-result').innerHTML = "Esperando código QR...";
+    document.getElementById('scan-result').innerHTML = "⏳ Cargando estado de asistencia...";
     
-    // Configuración del escáner
-    if(!html5QrcodeScanner) {
-      html5QrcodeScanner = new Html5QrcodeScanner(
-        "reader", 
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        /* verbose= */ false
-      );
-      html5QrcodeScanner.render(onScanSuccess, (errorMessage) => {
-        // parse error, ignore it.
-      });
+    // Usamos la fecha del picker si el docente la seleccionó, o hoy como fallback.
+    // Esta misma fecha se pasa al backend para que el registro y la verificación
+    // de duplicados correspondan al día de la sesión seleccionada.
+    const fechaInput = document.getElementById('fecha-sesion-asist');
+    if (fechaInput && fechaInput.value) {
+      fechaEscaner = fechaInput.value; // Fecha seleccionada por el docente
+    } else {
+      const hoyLocal = new Date();
+      fechaEscaner = `${hoyLocal.getFullYear()}-${String(hoyLocal.getMonth()+1).padStart(2,'0')}-${String(hoyLocal.getDate()).padStart(2,'0')}`;
     }
+    
+    // Primero cargamos los datos del servidor para sincronizar la tabla y el contador
+    // El escáner arranca DENTRO DEL CALLBACK para garantizar que yaEstabaPresente
+    // sea correcto desde el primer escaneo
+    google.script.run.withSuccessHandler(res => {
+      if (!res || !res.participantes) {
+        document.getElementById('scan-result').innerHTML = "⚠️ Error al cargar lista. Reintenta.";
+        return;
+      }
+      
+      // 1. Actualizar tabla con el template COMPLETO (igual que cargarAsistenciaDelDia)
+      const alumnos = res.participantes;
+      const estaBloqueado = res.bloqueado;
+      const tbody = document.getElementById('lista-alumnos');
+      if (tbody) {
+        const htmlFilas = alumnos.map(a => {
+          let colorTexto = '#94a3b8';
+          let isChecked = false;
+          if (a.estado === 'Presente') { colorTexto = '#10b981'; isChecked = true; }
+          else if (a.estado === 'Justificado') { colorTexto = '#f59e0b'; }
+          const disabledAttr = estaBloqueado ? 'disabled' : '';
+          const opacity = estaBloqueado ? '0.7' : '1';
+          return `
+          <tr style="border-bottom: 1px solid #334155;">
+            <td style="padding:15px;">
+              <div style="display:flex; align-items:center; gap:15px;">
+                <button onclick="verQR('${a.id}', '${currentEv}', '${a.nombre}')"
+                        style="background:#e0f2fe; border:none; border-radius:50%; width:40px; height:40px; cursor:pointer; font-size:1.2rem;">
+                  🎟️
+                </button>
+                <div>
+                  <div onclick="verKardex('${a.id}')" title="Ver historial"
+                       style="font-weight:bold; color:#f8fafc; cursor:pointer; text-decoration:underline; text-decoration-style:dotted;">
+                    ${a.nombre}
+                  </div>
+                  <div style="font-size:0.75rem; color:#64748b;">
+                    📅 Historial: <span style="color:#e2e8f0;">${a.conteo || 0}</span> sesiones ok
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td style="text-align:right; padding:15px;">
+              <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px; opacity:${opacity}">
+                <button onclick="marcarJustificado('${a.id}')" ${disabledAttr}
+                        title="Justificar Inasistencia"
+                        style="background:#fef3c7; border:1px solid #fcd34d; border-radius:8px; width:35px; height:35px; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; margin-right:5px;">
+                  💊
+                </button>
+                <span id="label-${a.id}" data-estado="${a.estado}"
+                      style="font-size:0.8rem; font-weight:bold; color:${colorTexto}; min-width:75px; text-align:right;">
+                  ${a.estado}
+                </span>
+                <label class="switch">
+                  <input type="checkbox" id="check-${a.id}" ${isChecked ? 'checked' : ''} ${disabledAttr}
+                         onchange="cambiarEstadoSwitch('${a.id}')">
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </td>
+          </tr>`;
+        }).join('');
+        tbody.innerHTML = htmlFilas;
+      }
+      
+      // 2. Actualizar contador
+      if (typeof actualizarContadorDesdeDatos === 'function') {
+        actualizarContadorDesdeDatos(alumnos);
+      }
+      
+      // 3. AHORA SÍ iniciamos el escáner (datos ya sincronizados)
+      document.getElementById('scan-result').innerHTML = "Esperando código QR...";
+      if (!html5QrcodeScanner) {
+        html5QrcodeScanner = new Html5QrcodeScanner(
+          "reader", 
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          false
+        );
+        html5QrcodeScanner.render(onScanSuccess, () => {});
+      }
+    }).withFailureHandler(err => {
+      document.getElementById('scan-result').innerHTML = "❌ Error de conexión.";
+      console.error("Error cargando asistencia al abrir escáner:", err);
+    }).getParticipantesConEstado(currentEv, fechaEscaner);
   }
 
   function detenerEscaner() {
@@ -1558,8 +1755,34 @@ function verVistaPreviaDiploma(idParticipante) {
 
 
 // --- GUARDAR NOTA AL ESCRIBIR (CON LOG) ---
+function guardarNotaCambio(idAct, idAlum, valor) {
+  const nota = parseFloat(valor) || 0;
+  
+  // --- VALIDACIÓN CLIENTE ---
+  if (nota < 0) {
+    showToast("Error", "La nota no puede ser negativa.", "error");
+    return;
+  }
+  if (nota > 10) {
+    showToast("Error", "La nota no puede ser mayor a 10.", "error");
+    return;
+  }
 
+  showToast("Guardando", "Actualizando calificación...", "info");
 
+  google.script.run
+    .withSuccessHandler(res => {
+      if(res.success) {
+        showToast("Éxito", "Calificación guardada", "success");
+      } else {
+        showToast("Error", res.message, "error");
+      }
+    })
+    .withFailureHandler(err => {
+      showToast("Error", "No se pudo guardar: " + err, "error");
+    })
+    .guardarNota(idAct, idAlum, nota);
+}
 // --- GENERAR DIPLOMA (Actualizado con Reenvío) ---
 function generarDiploma(idParticipante, esReenvio) {
   let mensaje = "¿Deseas generar y enviar el diploma a este alumno?";
@@ -1751,17 +1974,30 @@ function guardarAsistencia() {
     const fechaElegida = document.getElementById('fecha-sesion-asist').value;
     const btn = document.querySelector('#asistencia-panel button.btn-p');
     
-    btn.innerText = "⏳ Guardando...";
-    btn.disabled = true;
+    let originalText = "💾 Guardar Cambios";
+    if (btn) {
+       originalText = btn.innerHTML;
+       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+       btn.disabled = true;
+    }
 
-    google.script.run.withSuccessHandler(res => {
-      btn.innerText = "💾 Guardar Cambios";
-      btn.disabled = false;
-      
-      showModal({ title: "Guardado", message: res.message, type: "success" });
-      cargarAsistenciaDelDia(); // Recargar para ver contadores actualizados
-      
-    }).registrarAsistencia(currentEv, datosParaGuardar, user.email, fechaElegida);
+    google.script.run
+      .withSuccessHandler(res => {
+        if (btn) {
+           btn.innerHTML = originalText;
+           btn.disabled = false;
+        }
+        showModal({ title: "Guardado", message: res.message, type: "success" });
+        cargarAsistenciaDelDia(); // Recargar para ver contadores actualizados
+      })
+      .withFailureHandler(err => {
+        if (btn) {
+           btn.innerHTML = originalText;
+           btn.disabled = false;
+        }
+        showModal({ title: "Error", message: "Error al guardar: " + err, type: "error" });
+      })
+      .registrarAsistencia(currentEv, datosParaGuardar, user.email, fechaElegida);
 }
 // --- VER HISTORIAL (MATRIZ) EN MODAL (MODIFICADO CON TÍTULO) ---
 function verHistorial() {
@@ -2009,26 +2245,39 @@ function irACrudParticipantes() {
 
 function cargarTablaParticipantes() {
   const tbody = document.getElementById('tabla-participantes-body');
-  tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:20px;'>Cargando directorio...</td></tr>";
+  tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:20px;'>Cargando directorio...</td></tr>";
   
+  // Reset select-all and hide bulk delete button
+  const chkAll = document.getElementById('chk-select-all');
+  if(chkAll) chkAll.checked = false;
+  const btnBorrar = document.getElementById('btn-borrar-seleccionados');
+  if(btnBorrar) btnBorrar.style.display = 'none';
+
   google.script.run.withSuccessHandler(lista => {
     if(lista.length === 0) {
-      tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:20px;'>No hay alumnos registrados aún.</td></tr>";
+      tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:20px;'>No hay alumnos registrados aún.</td></tr>";
       return;
     }
 
     tbody.innerHTML = lista.map(p => `
       <tr style="border-bottom: 1px solid #334155;">
+        <td style="padding:15px;">
+           <input type="checkbox" class="chk-participante" value="${p.idsInscripcion.join(',')}" onchange="actualizarConteoSeleccion()" style="width:18px; height:18px; cursor:pointer;">
+        </td>
         <td style="padding:15px; font-weight:bold;">${p.nombre}</td>
         <td style="padding:15px; color:#cbd5e1;">${p.email}</td>
         <td style="padding:15px;">
-           <span class="cupo-badge badge-ok" style="background:rgba(59, 130, 246, 0.2); color:#60a5fa;">${p.nombreEvento}</span>
+           <div style="display:flex; flex-wrap:wrap; gap:5px;">
+             ${p.eventosNombres.map(nombreCurso => 
+                `<span class="cupo-badge badge-ok" style="background:rgba(59, 130, 246, 0.2); color:#60a5fa; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">${nombreCurso}</span>`
+             ).join('')}
+           </div>
         </td>
         <td style="padding:15px; text-align:right;">
            <div style="display:flex; gap:10px; justify-content:flex-end;">
-              <button onclick="verKardex('${p.id}')" title="Ver Perfil Académico" style="background:#3b82f6; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;">🎓</button>
-              <button onclick="abrirEditarParticipante('${p.id}', '${p.nombre}', '${p.email}')" title="Editar Datos" style="background:#f59e0b; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;">✏️</button>
-              <button onclick="borrarParticipante('${p.id}', '${p.nombre}')" title="Eliminar Inscripción" style="background:#ef4444; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;">🗑️</button>
+              <button onclick="verKardex('${p.idsInscripcion[0]}')" title="Ver Perfil Académico" style="background:#3b82f6; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;">🎓</button>
+              <button onclick="abrirEditarParticipante('${p.idsInscripcion.join(',')}', '${p.nombre}', '${p.email}')" title="Editar Datos" style="background:#f59e0b; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;">✏️</button>
+              <button onclick="borrarParticipante('${p.idsInscripcion.join(',')}', '${p.nombre}')" title="Eliminar Inscripción" style="background:#ef4444; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;">🗑️</button>
            </div>
         </td>
       </tr>
@@ -2046,6 +2295,13 @@ function abrirEditarParticipante(id, nombre, email) {
 }
 
 function guardarEdicionParticipante() {
+  const campos = [
+    {id: 'edit-p-nombre', tipo: 'name'},
+    {id: 'edit-p-email', tipo: 'email'}
+  ];
+
+  if(!validarForm(campos)) return;
+
   const datos = {
     id: document.getElementById('edit-p-id').value,
     nombre: document.getElementById('edit-p-nombre').value,
@@ -2083,6 +2339,55 @@ function borrarParticipante(id, nombre) {
      }).eliminarParticipanteDirecto(id);
   }
 }
+
+// --- SELECCIÓN MASIVA Y BORRADO EN LOTE ---
+function toggleSelectAll(masterCheckbox) {
+  const checkboxes = document.querySelectorAll('.chk-participante');
+  checkboxes.forEach(chk => chk.checked = masterCheckbox.checked);
+  actualizarConteoSeleccion();
+}
+
+function actualizarConteoSeleccion() {
+  const checked = document.querySelectorAll('.chk-participante:checked');
+  const total = document.querySelectorAll('.chk-participante');
+  const btn = document.getElementById('btn-borrar-seleccionados');
+  const counter = document.getElementById('count-seleccionados');
+  
+  counter.textContent = checked.length;
+  btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
+  
+  // Sync select-all checkbox
+  const chkAll = document.getElementById('chk-select-all');
+  if(chkAll) chkAll.checked = (checked.length === total.length && total.length > 0);
+}
+
+function borrarSeleccionados() {
+  const checked = document.querySelectorAll('.chk-participante:checked');
+  const ids = Array.from(checked).map(chk => chk.value);
+  
+  if(ids.length === 0) {
+    showToast("Atención", "No hay alumnos seleccionados.", "warning");
+    return;
+  }
+  
+  if(!confirm(`¿Estás seguro de eliminar ${ids.length} alumno(s)?\nEsta acción no se puede deshacer.`)) return;
+  
+  const btn = document.getElementById('btn-borrar-seleccionados');
+  btn.innerText = "Eliminando...";
+  btn.disabled = true;
+
+  google.script.run.withSuccessHandler(res => {
+    btn.disabled = false;
+    if(res.success) {
+      showToast("Éxito", res.message, "success");
+      cargarTablaParticipantes();
+    } else {
+      showToast("Error", res.message, "error");
+      btn.innerHTML = '🗑️ Eliminar seleccionados (<span id="count-seleccionados">' + ids.length + '</span>)';
+    }
+  }).eliminarParticipantesMasivo(ids);
+}
+
 // --- FUNCIONES PARA CREAR DESDE EL CRUD ---
 
 function abrirModalCrearDesdeCrud() {
@@ -2108,14 +2413,17 @@ function abrirModalCrearDesdeCrud() {
 }
 
 function guardarNuevoPDesdeCrud() {
+  const campos = [
+    {id: 'new-p-evento', tipo: 'text'},
+    {id: 'new-p-nombre', tipo: 'name'},
+    {id: 'new-p-email', tipo: 'email'}
+  ];
+
+  if(!validarForm(campos)) return;
+
   const idEvento = document.getElementById('new-p-evento').value;
   const nombre = document.getElementById('new-p-nombre').value;
   const correo = document.getElementById('new-p-email').value;
-
-  if(!idEvento || !nombre || !correo) {
-     showToast("Atención", "Por favor completa todos los campos.", "warning");
-     return;
-  }
 
   const btn = document.querySelector('#modal-crear-participante .btn-p');
   const textoOriginal = btn.innerText;
@@ -2565,16 +2873,23 @@ function guardarNotaCambio(idAct, idAlum, valor) {
     return;
   }
   
-  // Guardar visualmente "Guardando..." si quisieras, o directo:
-  google.script.run.withSuccessHandler(() => {
-     // Registrar Log
-     google.script.run.registrarLog(
-        user.email, 
-        "Notas", 
-        "Modificación", 
-        `Actualizó nota del alumno ID ${idAlum} en actividad ${idAct} a: ${valor}`
-     );
-  }).guardarNota(idAct, idAlum, valor);
+  showToast("Guardando", "Actualizando calificación...", "info");
+
+  google.script.run
+    .withSuccessHandler(() => {
+       showToast("Éxito", "Calificación guardada", "success");
+       // Registrar Log
+       google.script.run.registrarLog(
+          user.email, 
+          "Notas", 
+          "Modificación", 
+          `Actualizó nota del alumno ID ${idAlum} en actividad ${idAct} a: ${valor}`
+       );
+    })
+    .withFailureHandler(err => {
+      showToast("Error", "No se pudo guardar: " + err, "error");
+    })
+    .guardarNota(idAct, idAlum, valor);
 }
 
 // 2. NUEVA TAREA (Con Auditoría)
@@ -2592,12 +2907,26 @@ function guardarUsuario() {
   
   // Validar
   if(!validarCamposObligatorios([
-      {id:'u-nombre', tipo:'text'},
+      {id:'u-nombre', tipo:'name'},
       {id:'u-email', tipo:'email'},
       {id:'u-pass', tipo:'password'} // Se asume obligatorio siempre para simplificar por ahora
   ])) return;
 
-  google.script.run.withSuccessHandler(res => {
+  const btn = document.querySelector('#modal-usuario .btn-p');
+  let originalText = "Guardar";
+  if (btn) {
+     originalText = btn.innerHTML;
+     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+     btn.disabled = true;
+  }
+
+  google.script.run
+    .withSuccessHandler(res => {
+      if (btn) {
+         btn.innerHTML = originalText;
+         btn.disabled = false;
+      }
+      
       // Registrar Log
       google.script.run.registrarLog(
           user.email, 
@@ -2609,7 +2938,15 @@ function guardarUsuario() {
       cerrarModalUsuario();
       if(typeof cargarUsuarios === "function") cargarUsuarios(); // Refrescar si existe la función
       showToast("Éxito", res.message, "success");
-  }).guardarUsuarioServidor(u);
+    })
+    .withFailureHandler(err => {
+      if (btn) {
+         btn.innerHTML = originalText;
+         btn.disabled = false;
+      }
+      showToast("Error", "Error al guardar usuario: " + err, "error");
+    })
+    .guardarUsuarioServidor(u);
 }
 
 // 4. ELIMINAR USUARIO (Con Auditoría)
@@ -2637,6 +2974,18 @@ function abrirModalTarea() {
   document.getElementById('t-desc').value = "";
   document.getElementById('t-peso').value = "";
   document.getElementById('modal-tarea').classList.remove('hidden');
+
+  // --- INFO DE PESO DISPONIBLE ---
+  if(currentEv) {
+    google.script.run.withSuccessHandler(pesoActual => {
+      const faltante = (100 - pesoActual).toFixed(1);
+      if (faltante <= 0) {
+        showToast("Límite Alcanzado", "Ya se ha asignado el 100% del peso en este curso.", "warning");
+      } else {
+        showToast("Info de Pesos", `Tienes un ${faltante}% de peso disponible para nuevas actividades.`, "info");
+      }
+    }).getPesoTotalActividades(currentEv);
+  }
 }
 
 // 2. ABRIR MODAL PARA EDITAR (Carga datos)
@@ -2646,6 +2995,14 @@ function prepararEdicionTarea(id, nombre, peso) {
   document.getElementById('t-peso').value = peso;
   document.getElementById('t-desc').value = ""; // Opcional: podrías traer la descripción si la tuvieras a mano
   document.getElementById('modal-tarea').classList.remove('hidden');
+
+  // --- INFO DE PESO DISPONIBLE ---
+  if(currentEv) {
+    google.script.run.withSuccessHandler(pesoOtros => {
+      const disponible = (100 - pesoOtros).toFixed(1);
+      showToast("Edición de Peso", `Otras actividades suman ${pesoOtros}%. Dispones de hasta ${disponible}% para esta actividad.`, "info");
+    }).getPesoTotalActividades(currentEv, id);
+  }
 }
 
 // 3. GUARDAR (Maneja Crear y Editar)
@@ -2659,43 +3016,65 @@ function guardarNuevaTarea() {
       {id:'t-titulo', tipo:'text'}
   ])) return;
 
-  const datos = {
-    id: id, // Si está vacío es nuevo, si tiene valor es edición
-    idEvento: currentEv,
-    titulo: titulo,
-    desc: desc,
-    peso: peso
-  };
+  const pesoNum = parseFloat(peso) || 0;
+  if (pesoNum < 0) return showToast("Error", "el peso no puede ser negativo.", "error");
 
   const btn = document.querySelector('#modal-tarea .btn-p');
   const txtOriginal = btn.innerText;
-  btn.innerText = "Guardando...";
+  btn.innerText = "Validando...";
   btn.disabled = true;
 
-  if (id) {
-    // --- MODO EDICIÓN ---
-    google.script.run.withSuccessHandler(res => {
-       google.script.run.registrarLog(user.email, "Actividades", "Editar", `Editó actividad: ${titulo}`);
-       
+  // --- VALIDACIÓN CLIENTE (PESO TOTAL) ---
+  google.script.run.withSuccessHandler(pesoBase => {
+    const totalSimulado = pesoBase + pesoNum;
+    
+    if (totalSimulado > 100.01) {
        btn.innerText = txtOriginal;
        btn.disabled = false;
-       document.getElementById('modal-tarea').classList.add('hidden');
-       cargarGradebook();
-       showToast("Actualizado", res.message, "success");
-    }).editarActividadServidor(datos);
+       return showToast("Límite Excedido", `El peso total (${totalSimulado.toFixed(1)}%) superaría el 100%.`, "warning");
+    }
 
-  } else {
-    // --- MODO CREACIÓN ---
-    google.script.run.withSuccessHandler(res => {
-       google.script.run.registrarLog(user.email, "Actividades", "Crear", `Creó actividad: ${titulo}`);
-       
-       btn.innerText = txtOriginal;
-       btn.disabled = false;
-       document.getElementById('modal-tarea').classList.add('hidden');
-       cargarGradebook();
-       showToast("Éxito", res.message, "success");
-    }).crearTarea(datos);
-  }
+    // Si es válido, proceder a guardar
+    btn.innerText = "Guardando...";
+
+    const datos = {
+      id: id,
+      idEvento: currentEv,
+      titulo: titulo,
+      desc: desc,
+      peso: pesoNum
+    };
+
+    if (id) {
+      // --- MODO EDICIÓN ---
+      google.script.run.withSuccessHandler(res => {
+         google.script.run.registrarLog(user.email, "Actividades", "Editar", `Editó actividad: ${titulo}`);
+         btn.innerText = txtOriginal;
+         btn.disabled = false;
+         if(res.success) {
+           document.getElementById('modal-tarea').classList.add('hidden');
+           cargarGradebook();
+           showToast("Actualizado", res.message, "success");
+         } else {
+           showToast("Error", res.message, "error");
+         }
+      }).editarActividadServidor(datos);
+    } else {
+      // --- MODO CREACIÓN ---
+      google.script.run.withSuccessHandler(res => {
+         google.script.run.registrarLog(user.email, "Actividades", "Crear", `Creó actividad: ${titulo}`);
+         btn.innerText = txtOriginal;
+         btn.disabled = false;
+         if(res.success) {
+           document.getElementById('modal-tarea').classList.add('hidden');
+           cargarGradebook();
+           showToast("Éxito", res.message, "success");
+         } else {
+           showToast("Error", res.message, "error");
+         }
+      }).crearTarea(datos);
+    }
+  }).getPesoTotalActividades(currentEv, id || null);
 }
 
 // 4. BORRAR TAREA
@@ -3002,52 +3381,46 @@ function mostrarPortalAlumno(res) {
   
   var studentScreen = document.getElementById('student-screen');
   if(!studentScreen) {
-    // Crear student-screen dinámicamente si no existe
-    document.body.insertAdjacentHTML('beforeend', '<div id="student-screen" class="hidden" style="min-height:100vh; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 20px;"><div id="student-content" style="color:white;"></div></div>');
+    document.body.insertAdjacentHTML('beforeend', '<div id="student-screen" class="hidden" style="min-height:100vh; background:#0f172a; padding: 30px 20px;"><div id="student-content" style="color:white;"></div></div>');
     studentScreen = document.getElementById('student-screen');
   }
   
   studentScreen.classList.remove('hidden');
-  
-  // --- AJUSTAR ANCHO Y RECONSTRUIR HEADER ---
-  studentScreen.style.maxWidth = '900px';
-  studentScreen.style.margin = '0 auto';
-  studentScreen.style.minHeight = '100vh';
-  studentScreen.style.background = 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)';
-  studentScreen.style.padding = '20px';
-  
-  // Fondo oscuro para toda la página
+  studentScreen.style.cssText = 'min-height:100vh; background:#0f172a; padding: 30px 20px;';
   document.body.style.background = '#0f172a';
   
-  // Reconstruir header con solo botón de Cerrar Sesión
+  // Reconstruir con header de imagen de referencia
   studentScreen.innerHTML = `
-    <header style="display:flex; justify-content:space-between; align-items:center; padding:15px 25px; background:rgba(30,41,59,0.9); border-radius:12px; margin-bottom:25px; border:1px solid #334155;">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span style="font-size:1.5rem;">🎓</span>
-        <div>
-          <h2 style="color:white; margin:0; font-size:1.2rem;">Hola, ${res.nombre}</h2>
-          <small style="color:#94a3b8;">Portal del Estudiante</small>
+    <div style="max-width:1000px; margin:0 auto;">
+      <header style="display:flex; justify-content:space-between; align-items:center; padding:18px 25px; background:#1e293b; border-radius:14px; margin-bottom:30px; border:1px solid #334155;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:42px; height:42px; background:#334155; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">🎓</div>
+          <div>
+            <div style="color:white; font-weight:700; font-size:1.1rem;">Hola, ${res.nombre}</div>
+            <div style="color:#94a3b8; font-size:0.82rem;">Portal del Estudiante</div>
+          </div>
         </div>
-      </div>
-      <button onclick="logoutAlumno()" class="btn-salir">Cerrar Sesión</button>
-    </header>
-    <div id="student-content" style="color:white;"></div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <div id="refresh-student" class="bell-container" onclick="location.reload()" title="Recargar página">
+            <span style="font-size:1.3rem;"></span>
+          </div>
+          <button onclick="logoutAlumno()" style="background:#ef4444; color:white; border:none; padding:10px 22px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;">Cerrar Sesión</button>
+        </div>
+      </header>
+      <div id="student-content"></div>
+    </div>
   `;
   
-  // --- CORE FIX: ESTABLECER SESIÓN DE USUARIO ---
+  // Guardar sesión
   const emailAlumno = res.datos && res.datos.perfil ? res.datos.perfil.email : (window.emailAlumnoLogin || '');
-  
-  user = {
-      email: emailAlumno,
-      nombre: res.nombre,
-      rol: 'alumno'
-  };
+  user = { email: emailAlumno, nombre: res.nombre, rol: 'alumno' };
   localStorage.setItem('sesion_usuario', JSON.stringify(user));
-
   window.emailAlumnoActual = user.email;
   window.historialAlumnoTemp = res.datos.historial;
+  
+  setTimeout(verificarNotificaciones, 1000);
 
-  const historial = res.datos.historial; 
+  const historial = res.datos.historial;
   const container = document.getElementById('student-content');
   
   if(!historial || historial.length === 0) {
@@ -3058,52 +3431,58 @@ function mostrarPortalAlumno(res) {
   let html = `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">`;
   
   historial.forEach((h, index) => {
-     const aprobado = h.estado === "APROBADO";
-     const reprobado = h.estado === "REPROBADO" || h.estado === "SIN DERECHO";
+     // Calcular badge
+     let badgeBg, badgeColor, badgeText, borderColor;
      
-     let colorEstado = "#3b82f6"; 
-     let bordeColor = "#e2e8f0";
+     if(h.estado === "APROBADO") {
+       badgeBg = "#dcfce7"; badgeColor = "#15803d"; badgeText = "APROBADO"; borderColor = "#22c55e";
+     } else if(h.estado === "REPROBADO") {
+       badgeBg = "#fee2e2"; badgeColor = "#b91c1c"; badgeText = "SIN DERECHO"; borderColor = "#ef4444";
+     } else if(h.estado === "SIN DERECHO") {
+       badgeBg = "#fee2e2"; badgeColor = "#b91c1c"; badgeText = "SIN DERECHO"; borderColor = "#ef4444";
+     } else {
+       badgeBg = "#dbeafe"; badgeColor = "#1d4ed8"; badgeText = h.estado || "EN CURSO"; borderColor = "#3b82f6";
+     }
+     
+     // Botón diploma — solo si APROBADO
+     let btnDiploma = (h.estado === "APROBADO")
+       ? `<button onclick="descargarMiDiploma('${h.idEvento}')" style="width:100%; background:linear-gradient(90deg,#f59e0b,#d97706); color:white; border:none; padding:13px; border-radius:9px; font-weight:700; cursor:pointer; font-size:0.95rem; margin-bottom:10px;">📜 Descargar Diploma</button>`
+       : "";
 
-     if(aprobado) { colorEstado = "#10b981"; bordeColor = "#10b981"; }
-     else if(reprobado) { colorEstado = "#ef4444"; bordeColor = "#ef4444"; }
-     
-     let btnDiploma = aprobado ? `<button onclick="descargarMiDiploma('${h.idEvento}')" class="btn-diploma-student" style="margin-top:15px;">🏆 Descargar Diploma</button>` : "";
+     // Botón encuesta — solo si APROBADO
+     let btnEncuesta = "";
+     if (h.estado === "APROBADO") {
+       btnEncuesta = h.calificado
+         ? `<button disabled style="width:100%; background:#10b981; color:white; border:none; padding:13px; border-radius:9px; font-weight:700; font-size:0.95rem; cursor:not-allowed; opacity:0.7;">✅ Ya evaluado</button>`
+         : `<button onclick="abrirModalEncuesta('${h.idEvento}', '${h.curso}')" style="width:100%; background:linear-gradient(90deg,#f59e0b,#d97706); color:white; border:none; padding:13px; border-radius:9px; font-weight:700; cursor:pointer; font-size:0.95rem;">📝 Evaluar este Taller</button>`;
+     }
 
      html += `
-     <div style="background: white; border-radius: 12px; padding: 25px; border-top: 5px solid ${bordeColor}; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+     <div style="background:white; border-radius:14px; padding:22px; border-left:5px solid ${borderColor}; box-shadow:0 4px 20px rgba(0,0,0,0.12);">
         
-        <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
-           <span style="background:${colorEstado}20; color:${colorEstado}; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold;">${h.estado}</span>
-           <span style="color:#94a3b8; font-size: 0.8rem;">📅 ${h.fecha}</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+           <span style="background:${badgeBg}; color:${badgeColor}; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:800; letter-spacing:0.5px;">${badgeText}</span>
+           <span style="color:#94a3b8; font-size:0.8rem;">📅 ${h.fecha}</span>
         </div>
         
-        <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.1rem;">${h.curso}</h3>
+        <h3 style="margin:0 0 18px 0; color:#1e293b; font-size:1.15rem; font-weight:800; line-height:1.3;">${h.curso}</h3>
         
-        <div style="display:flex; justify-content:space-between; margin: 15px 0; padding: 15px 0; border-top: 1px dashed #e2e8f0; border-bottom: 1px dashed #e2e8f0;">
-           
-           <div style="text-align:center; flex:1; border-right:1px solid #f1f5f9;">
-              <span style="display:block; font-size: 0.7rem; color: #64748b; margin-bottom:5px;">ASISTENCIA</span>
-              <span style="font-weight:bold; font-size: 1.3rem; color: #334155;">${h.asistencia}%</span>
-              <div style="margin-top:5px;">
-                 <button onclick="verDetalleAsistencia(${index})" style="font-size:0.75rem; color:#3b82f6; background:none; border:none; cursor:pointer; font-weight:600;">
-                    📅 Ver detalle
-                 </button>
-              </div>
+        <div style="display:flex; justify-content:space-around; padding:15px 0; border-top:1px dashed #e2e8f0; border-bottom:1px dashed #e2e8f0; margin-bottom:18px;">
+           <div style="text-align:center;">
+              <div style="font-size:0.7rem; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Asistencia</div>
+              <div style="font-weight:800; font-size:1.5rem; color:#1e293b;">${h.asistencia}%</div>
+              <button onclick="verDetalleAsistencia(${index})" style="font-size:0.75rem; color:#3b82f6; background:none; border:none; cursor:pointer; font-weight:600; margin-top:4px;">📅 Ver detalle</button>
            </div>
-           
-           <div style="text-align:center; flex:1;">
-              <span style="display:block; font-size: 0.7rem; color: #64748b; margin-bottom:5px;">NOTA FINAL</span>
-              <span style="font-weight:bold; font-size: 1.3rem; color: #334155;">${h.nota}</span>
-              <div style="margin-top:5px;">
-                 <button onclick="verDetalleNotas(${index})" style="font-size:0.75rem; color:#3b82f6; background:none; border:none; cursor:pointer; font-weight:600;">
-                    🔍 Ver detalle
-                 </button>
-              </div>
+           <div style="width:1px; background:#e2e8f0;"></div>
+           <div style="text-align:center;">
+              <div style="font-size:0.7rem; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Nota Final</div>
+              <div style="font-weight:800; font-size:1.5rem; color:#1e293b;">${h.nota}</div>
+              <button onclick="verDetalleNotas(${index})" style="font-size:0.75rem; color:#3b82f6; background:none; border:none; cursor:pointer; font-weight:600; margin-top:4px;">🔍 Ver detalle</button>
            </div>
-
         </div>
 
         ${btnDiploma}
+        ${btnEncuesta}
      </div>
      `;
   });
@@ -3583,6 +3962,8 @@ function reenviarCodigo() {
 
 // Variable global para evitar lecturas dobles muy rápidas
 let escaneoPausado = false; 
+// Fecha de la sesión activa en el escáner (tomada del date picker al abrir)
+let fechaEscaner = null;
 
 // --- 1. FUNCIÓN PARA MOSTRAR NOTIFICACIONES FLOTANTES (TOAST) ---
 function showToast(titulo, mensaje, tipo = 'info') {
@@ -3599,41 +3980,40 @@ function showToast(titulo, mensaje, tipo = 'info') {
   if(tipo === 'error') icono = '⛔';
   if(tipo === 'warning') icono = '⚠️';
 
-  // Contenido HTML del toast
+  // Contenido HTML del toast redesigned
   toast.innerHTML = `
-    <div style="display:flex; align-items:center; gap:10px;">
-       <span style="font-size:1.5rem;">${icono}</span>
-       <div class="toast-content">
-          <span class="toast-title">${titulo}</span>
-          <span class="toast-msg">${mensaje}</span>
-       </div>
+    <div class="toast-sidebar">
+       <span style="font-size:1.4rem;">${icono}</span>
     </div>
+    <div class="toast-body">
+       <span class="toast-title">${titulo}</span>
+       <span class="toast-msg">${mensaje}</span>
+    </div>
+    <button class="toast-close" onclick="this.parentElement.classList.remove('show'); setTimeout(() => this.parentElement.remove(), 400)">&times;</button>
   `;
 
   // Agregar al contenedor
   container.appendChild(toast);
+
+  // Animar entrada (deslizar desde la derecha) con .show
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
 
   // Reproducir sonido "Beep" (si existe el elemento de audio)
   if(tipo === 'success' || tipo === 'warning') {
      const audio = document.getElementById('audio-beep');
      if(audio) {
        audio.currentTime = 0;
-       // Intentar reproducir (a veces requiere interacción previa del usuario)
-       audio.play().catch(e => console.log("Audio bloqueado o no iniciado:", e));
+       audio.play().catch(e => console.log("Audio bloqueado:", e));
      }
   }
 
-  // Animar entrada (deslizar desde la derecha)
-  requestAnimationFrame(() => {
-    toast.classList.add('show');
-  });
-
-  // Eliminar automáticamente después de 4 segundos
+  // Eliminar automáticamente después de 4 segundos (SOLO PARA TOASTS GENÉRICOS)
+  // Las notificaciones de docente (registrarNotificacion) se manejan aparte para ser persistentes
   setTimeout(() => {
-    toast.classList.remove('show'); // Deslizar hacia afuera
-    setTimeout(() => {
-      toast.remove(); // Borrar del DOM
-    }, 300); // Esperar a que termine la animación CSS
+    toast.classList.remove('show');
+    setTimeout(() => { toast.remove(); }, 300);
   }, 4000);
 }
 
@@ -3665,7 +4045,10 @@ function actualizarContadorDesdeDatos(listaAlumnos) {
 function onScanSuccess(decodedText, decodedResult) {
     if (escaneoPausado) return;
 
-    // A. Feedback Auditivo
+    // A. Bloquear inmediatamente para evitar doble lectura (debounce)
+    escaneoPausado = true;
+
+    // B. Feedback Auditivo
     emitirBeep();
 
     // B. Parseo del QR
@@ -3679,7 +4062,6 @@ function onScanSuccess(decodedText, decodedResult) {
     }
 
     console.log(`Scan: ${codigoParticipante}`);
-    escaneoPausado = true;
     showToast("Procesando...", "Validando código...", "info");
 
     let idEventoParaAsistencia = currentEv || idEventoDesdeQR;
@@ -3691,20 +4073,19 @@ function onScanSuccess(decodedText, decodedResult) {
     }
 
     // C. Feedback Visual INSTANTÁNEO (Switch + Contador)
+    // yaEstabaPresente declarado en función scope para que el withSuccessHandler lo vea
+    let yaEstabaPresente = false;
+
     try {
-        // 1. Mover Switch
         const checkVisual = document.getElementById('check-' + codigoParticipante);
-        let yaEstabaPresente = false;
         
         if(checkVisual) {
-            yaEstabaPresente = checkVisual.checked; // Guardamos estado anterior
+            yaEstabaPresente = checkVisual.checked; // Estado ANTES del scan
             checkVisual.checked = true;
-            
-            // Función visual del switch (si la tienes definida en otro lado)
             if(typeof cambiarEstadoSwitch === 'function') cambiarEstadoSwitch(codigoParticipante);
         }
 
-        // 2. Sumar al Contador (+1) solo si no estaba presente antes
+        // +1 solo si no estaba marcado como presente antes
         if (!yaEstabaPresente) {
             let spanPres = document.getElementById('live-count-presentes');
             let valActual = parseInt(spanPres.innerText) || 0;
@@ -3712,8 +4093,6 @@ function onScanSuccess(decodedText, decodedResult) {
             
             if(valActual < valTotal) {
                 spanPres.innerText = valActual + 1;
-                
-                // Efecto visual de "salto" en el número
                 spanPres.style.transform = "scale(1.5)";
                 setTimeout(() => spanPres.style.transform = "scale(1)", 200);
             }
@@ -3721,21 +4100,59 @@ function onScanSuccess(decodedText, decodedResult) {
     } catch(e) { console.log("Error visual UI:", e); }
 
     // D. Guardado en Base de Datos
-    google.script.run.withSuccessHandler(res => {
-       setTimeout(() => { escaneoPausado = false; }, 2000); 
+    google.script.run
+       .withSuccessHandler(res => {
+          // Desbloquear el scanner después de 2s (tiempo mínimo entre lecturas del mismo QR)
+          setTimeout(() => { escaneoPausado = false; }, 2000); 
 
-       if (res.success) {
-          showToast("¡Registrado!", res.mensaje, "success");
-          // Recargamos la tabla para asegurar consistencia
-          cargarAsistenciaDelDia(); 
-       } else {
-          // Si falló (ej: duplicado), revertimos visualmente si es necesario
-          const esAviso = res.message && res.message.toLowerCase().includes("ya");
-          showToast(esAviso ? "Información" : "Error", res.message, esAviso ? "warning" : "error");
-          cargarAsistenciaDelDia();
-       }
-       
-    }).registrarAsistenciaQR(codigoParticipante, idEventoParaAsistencia);
+          if (res.success) {
+            // Nuevo registro exitoso
+            showToast("¡Registrado!", res.mensaje, "success");
+            cargarAsistenciaDelDia(true); // Recarga silenciosa (no toca tabla ni contador)
+          } else if (res.esDuplicado) {
+            // El alumno YA estaba registrado hoy → no sumar al contador
+            // Revertir el +1 optimista, pero dejar el switch marcado (SÍ está presente)
+            showToast("ℹ️ Info", res.message, "warning");
+            if (!yaEstabaPresente) {
+              let spanPres = document.getElementById('live-count-presentes');
+              if (spanPres) {
+                let valActual = parseInt(spanPres.innerText) || 0;
+                if (valActual > 0) spanPres.innerText = valActual - 1;
+              }
+              // Switch permanece checked porque el alumno SÍ está presente en DB
+              const chk = document.getElementById('check-' + codigoParticipante);
+              if (chk) chk.checked = true;
+            }
+          } else {
+            // Error real (no inscrito, evento incorrecto, etc.) → revertir optimistic update
+            showToast("Error", res.message || "Error inesperado.", "error");
+            if (!yaEstabaPresente) {
+              let spanPres = document.getElementById('live-count-presentes');
+              if (spanPres) {
+                let valActual = parseInt(spanPres.innerText) || 0;
+                if (valActual > 0) spanPres.innerText = valActual - 1;
+              }
+              const chk = document.getElementById('check-' + codigoParticipante);
+              if (chk) chk.checked = false;
+            }
+          }
+       })
+       .withFailureHandler(err => {
+          // Error de red o de ejecución del script → revertir optimistic update
+          console.error("Error en registrarAsistenciaQR:", err);
+          showToast("Error de red", "No se pudo conectar. Reintenta.", "error");
+          setTimeout(() => { escaneoPausado = false; }, 2000);
+          if (!yaEstabaPresente) {
+            let spanPres = document.getElementById('live-count-presentes');
+            if (spanPres) {
+              let valActual = parseInt(spanPres.innerText) || 0;
+              if (valActual > 0) spanPres.innerText = valActual - 1;
+            }
+            const chk = document.getElementById('check-' + codigoParticipante);
+            if (chk) chk.checked = false;
+          }
+       })
+       .registrarAsistenciaQR(codigoParticipante, idEventoParaAsistencia, fechaEscaner);
 }
 // ==========================================
 // ===   MI HORARIO (DOCENTE / ALUMNO)    ===
@@ -3978,9 +4395,7 @@ function iniciarBackupJSON() {
     .getDataJSON();
 }
 
-</script>
-
-<script>
+// Se fusionaron los bloques <script> para evitar errores de referencia en la carga inicial
 function procesarArchivoRestore(input) {
   const file = input.files[0];
   if (!file) return;
@@ -4159,3 +4574,304 @@ function descargarDiploma(idEvento) {
     }
   }).descargarDiplomaAlumno(idEvento, email);
 }
+
+// ==========================================
+// === SISTEMA DE NOTIFICACIONES (js.txt) ===
+// ==========================================
+
+let notifInterval = null;
+
+function verificarNotificaciones() {
+  // Robustez: fallback a localStorage si el objeto 'user' o window.emailAlumnoActual aún no están listos
+  let email = (user && user.email) || window.emailAlumnoActual;
+  if (!email) {
+    const sesion = JSON.parse(localStorage.getItem('sesion_usuario') || '{}');
+    email = sesion.email;
+  }
+
+  console.log("Notif: Verificando para", email);
+  if (!email) return;
+
+  google.script.run.withSuccessHandler(notifs => {
+    console.log("Notif: Recibidas:", notifs ? notifs.length : 0);
+    actualizarIconoCampana(notifs ? notifs.length : 0);
+    if (!notifs) return;
+
+    // Si hay notificaciones nuevas, mostrar toast persistente
+    notifs.forEach(n => {
+       const key = "notif_shown_" + n.id;
+       if (!sessionStorage.getItem(key)) {
+          console.log("Notif: Mostrando toast para", n.id);
+          showNotificationToast(n);
+          sessionStorage.setItem(key, "true");
+       }
+    });
+  }).withFailureHandler(err => {
+    console.error("Notif: Error en backend:", err);
+  }).getNotificacionesUsuario(email);
+}
+
+function actualizarIconoCampana(cuenta) {
+  const badgeMain = document.getElementById('badge-main');
+  const badgeStudent = document.getElementById('badge-student');
+  
+  [badgeMain, badgeStudent].forEach(b => {
+    if (b) {
+      if (cuenta > 0) {
+        b.innerText = cuenta;
+        b.classList.remove('hidden');
+      } else {
+        b.classList.add('hidden');
+      }
+    }
+  });
+}
+
+function showNotificationToast(n) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const id = "toast-" + Date.now();
+  const toast = document.createElement('div');
+  toast.id = id;
+  toast.className = "toast info"; // Usar clase info para consistencia
+  
+  // Contenido HTML del toast redesigned (Persistente para notificaciones)
+  toast.innerHTML = `
+    <div class="toast-sidebar">
+       <span style="font-size:1.4rem;">🔔</span>
+    </div>
+    <div class="toast-body">
+      <span class="toast-title">Nueva Notificación</span>
+      <p class="toast-msg" style="margin: 8px 0;">${n.mensaje}</p>
+      <button onclick="leerNotificacion('${n.id}', '${id}')" class="btn-toast-action">
+        Marcar como leída
+      </button>
+    </div>
+    <button class="toast-close" onclick="this.parentElement.classList.remove('show'); setTimeout(() => this.parentElement.remove(), 400)">&times;</button>
+  `;
+
+  // Agregar al contenedor
+  container.appendChild(toast);
+  
+  // Animar entrada
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
+  
+  // Sonido
+  if (typeof emitirBeep === 'function') {
+    emitirBeep();
+  } else {
+    const audio = document.getElementById('audio-beep');
+    if(audio) {
+      audio.currentTime = 0;
+      audio.play().catch(e => console.log("Audio bloqueado:", e));
+    }
+  }
+}
+
+function leerNotificacion(idNotif, toastId) {
+  if (toastId) {
+    const t = document.getElementById(toastId);
+    if(t) t.remove();
+  }
+
+  google.script.run.withSuccessHandler(res => {
+    if (res.success) {
+      verificarNotificaciones(); 
+      if(document.getElementById('modal-notificaciones') && !document.getElementById('modal-notificaciones').classList.contains('hidden')) {
+        abrirModalNotificaciones(); 
+      }
+    }
+  }).marcarNotificacionLeida(idNotif);
+}
+
+function abrirModalNotificaciones() {
+  const email = (user && user.email) || window.emailAlumnoActual;
+  if (!email) return;
+
+  const modal = document.getElementById('modal-notificaciones');
+  const lista = document.getElementById('lista-notificaciones');
+  modal.classList.remove('hidden');
+  lista.innerHTML = '<p style="text-align:center; padding:20px; color:#94a3b8;">Cargando...</p>';
+
+  google.script.run.withSuccessHandler(notifs => {
+    if (!notifs || notifs.length === 0) {
+      lista.innerHTML = '<p style="text-align:center; padding:40px; color:#94a3b8;">📭 No tienes notificaciones pendientes.</p>';
+      return;
+    }
+
+    lista.innerHTML = notifs.map(n => `
+      <div class="notif-item">
+        <div class="notif-msg">${n.mensaje}</div>
+        <div class="notif-footer">
+          <span class="notif-date">${new Date(n.fecha).toLocaleString()}</span>
+          <button onclick="leerNotificacion('${n.id}')" class="btn-read">Marcar como leída</button>
+        </div>
+      </div>
+    `).join('');
+  }).getNotificacionesUsuario(email);
+}
+
+function cerrarModalNotificaciones() {
+  document.getElementById('modal-notificaciones').classList.add('hidden');
+}
+
+if (!notifInterval) {
+  notifInterval = setInterval(verificarNotificaciones, 30000);
+}
+
+// ==========================================
+// === SISTEMA DE ENCUESTAS (FRONTEND) ===
+// ==========================================
+
+window.datosEncuestaTemp = null;
+
+function abrirModalEncuesta(idEvento, nombreCurso) {
+  window.datosEncuestaTemp = { idEvento, nombreCurso };
+  
+  document.getElementById('encuesta-nombre-taller').innerText = nombreCurso;
+  document.getElementById('encuesta-comentario').value = "";
+  
+  // Limpiar estrellas y etiquetas
+  document.querySelectorAll('#modal-encuesta .star').forEach(s => s.classList.remove('active', 'hover-active'));
+  document.querySelectorAll('#modal-encuesta .star-rating').forEach(container => {
+    container.dataset.value = "0";
+  });
+  document.querySelectorAll('.rating-label').forEach(lbl => lbl.innerText = "");
+
+  document.getElementById('modal-encuesta').classList.remove('hidden');
+}
+
+function cerrarModalEncuesta() {
+  document.getElementById('modal-encuesta').classList.add('hidden');
+  window.datosEncuestaTemp = null;
+}
+
+// Mapeo de valores a etiquetas descriptivas
+const ratingTextMap = {
+  0: "",
+  1: "Pobre 😞",
+  2: "Regular 😐",
+  3: "Bueno 🙂",
+  4: "Muy Bueno 😃",
+  5: "¡Excelente! 🤩"
+};
+
+// Inicializar eventos de estrellas (delegación de eventos)
+document.addEventListener('mouseover', function(e) {
+  if (e.target.classList.contains('star')) {
+    const star = e.target;
+    const value = parseInt(star.dataset.value);
+    const container = star.parentElement;
+    const label = container.nextElementSibling; // div.rating-label
+    
+    // Mostrar preview en la etiqueta
+    label.innerText = ratingTextMap[value];
+    
+    // Iluminar para preview (hover)
+    const stars = container.querySelectorAll('.star');
+    stars.forEach(s => {
+      const sVal = parseInt(s.dataset.value);
+      if (sVal <= value) s.classList.add('hover-active');
+      else s.classList.remove('hover-active');
+    });
+  }
+});
+
+document.addEventListener('mouseout', function(e) {
+  if (e.target.classList.contains('star')) {
+    const container = e.target.parentElement;
+    const label = container.nextElementSibling;
+    const currentValue = parseInt(container.dataset.value) || 0;
+    
+    // Restaurar etiqueta al valor seleccionado
+    label.innerText = ratingTextMap[currentValue];
+    
+    // Quitar iluminación de preview
+    container.querySelectorAll('.star').forEach(s => s.classList.remove('hover-active'));
+  }
+});
+
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('star')) {
+    const star = e.target;
+    const value = parseInt(star.dataset.value);
+    const container = star.parentElement;
+    const label = container.nextElementSibling;
+    
+    // Actualizar dataset del contenedor
+    container.dataset.value = value;
+    label.innerText = ratingTextMap[value];
+    
+    // Iluminar estrellas permanentemente
+    const stars = container.querySelectorAll('.star');
+    stars.forEach(s => {
+      const sVal = parseInt(s.dataset.value);
+      if (sVal <= value) s.classList.add('active');
+      else s.classList.remove('active');
+    });
+    
+    // Feedback visual al click
+    star.style.transform = "scale(1.5)";
+    setTimeout(() => { star.style.transform = ""; }, 200);
+  }
+});
+
+function enviarEncuesta() {
+  const containerGeneral = document.querySelector('.star-rating[data-categoria="general"]');
+  const containerDocente = document.querySelector('.star-rating[data-categoria="docente"]');
+  const containerMaterial = document.querySelector('.star-rating[data-categoria="material"]');
+  
+  const general = parseInt(containerGeneral.dataset.value) || 0;
+  const docente = parseInt(containerDocente.dataset.value) || 0;
+  const material = parseInt(containerMaterial.dataset.value) || 0;
+  const comentario = document.getElementById('encuesta-comentario').value.trim();
+
+  // Validación básica
+  if (general === 0 || docente === 0 || material === 0) {
+    return showToast("Casi listo", "Por favor califica las 3 categorías con estrellas.", "warning");
+  }
+
+  const btn = event.currentTarget || event.target;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "⏳ Enviando...";
+  btn.disabled = true;
+
+  const payload = {
+    idEvento: window.datosEncuestaTemp.idEvento,
+    general: general,
+    docente: docente,
+    material: material,
+    comentario: comentario,
+    emailAlumno: window.emailAlumnoActual || window.emailAlumnoLogin 
+  };
+
+  google.script.run.withSuccessHandler(res => {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
+    if (res.success) {
+      showToast("¡Enviado!", res.message, "success");
+      cerrarModalEncuesta();
+      
+      // Feedback auditivo si existe
+      emitirBeep(); 
+
+      // Recargar el historial sin re-login si es posible
+      // Aquí buscamos refrescar el botón de 'Ya evaluado'
+      if (typeof irAPortalAlumno === 'function') {
+         irAPortalAlumno(window.emailAlumnoActual);
+      } else {
+         // Fallback: Si no hay función directa, recargamos con elHandler actual
+         if(window.emailAlumnoActual) {
+            google.script.run.withSuccessHandler(mostrarPortalAlumno).loginAlumno(window.emailAlumnoActual);
+         }
+      }
+    } else {
+      showToast("Error", res.message, "error");
+    }
+  }).guardarEncuesta(payload);
+}
+</script>
