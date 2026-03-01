@@ -1,6 +1,26 @@
-function doGet() {
-  return HtmlService.createTemplateFromFile('index')
-    .evaluate()
+function doGet(e) {
+  // Manejo de login vía Token (POST redirect) o normal
+  const loginToken = e.parameter.id_token || ''; 
+  const loginMode = e.parameter.login_mode || '';
+  
+  const template = HtmlService.createTemplateFromFile('index');
+  template.loginMode = loginMode;
+  template.loginToken = loginToken;
+  
+  return template.evaluate()
+    .setTitle('Gestión de Asistencia Pro')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+function doPost(e) {
+  // Google envía el id_token vía POST en el redirect_uri
+  const idToken = e.parameter.id_token || e.parameter.credential;
+  const template = HtmlService.createTemplateFromFile('index');
+  template.loginMode = 'google_v2';
+  template.loginToken = idToken;
+  
+  return template.evaluate()
     .setTitle('Gestión de Asistencia Pro')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
@@ -8,6 +28,13 @@ function doGet() {
 
 function incluir(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+// Obtener la URL del script para redirecciones (Limpia)
+function getScriptUrl() {
+  let url = ScriptApp.getService().getUrl();
+  if (url.endsWith('/')) url = url.slice(0, -1);
+  return url;
 }
 
 // --- UTILIDAD DE HASHING (SEGURIDAD) ---
@@ -59,6 +86,74 @@ function login(email, password) {
     // Registro de error técnico en auditoría
     registrarLog("Sistema", "Error Crítico", "Seguridad", `Falla en función login: ${e.toString()}`);
     return { success: false, message: "Error de conexión con la base de datos." };
+  }
+}
+
+// LOGIN CON GOOGLE (NATIVO - Evita errores de origen)
+function verificarLoginGoogleNativo() {
+  try {
+    // 1. OBTENER EMAIL DEL USUARIO ACTIVO (Autenticación segura de Google Apps Script)
+    const sub = Session.getActiveUser().getEmail();
+    if (!sub) {
+      return { success: false, message: "No se pudo obtener la identidad de Google. Asegúrate de haber autorizado la aplicación." };
+    }
+    const emailGoogle = sub.toLowerCase().trim();
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("Usuarios");
+    const datos = sheet.getDataRange().getValues();
+    
+    // 2. BUSCAR USUARIO EN LA BD
+    for (let i = 1; i < datos.length; i++) {
+      if (datos[i][1].toLowerCase().trim() === emailGoogle) {
+        const nombre = datos[i][3];
+        const rol = datos[i][4];
+
+        // Auditoría exitosa
+        registrarLog(emailGoogle, "Acceso (Google Nativo)", "Seguridad", `Inicio de sesión Google Nativo: ${nombre} (${rol})`);
+        
+        return { success: true, email: emailGoogle, nombre: nombre, rol: rol };
+      }
+    }
+    
+    // 3. SI NO EXISTE EN LA TABLA
+    registrarLog(emailGoogle, "Acceso Denegado (Google Nativo)", "Seguridad", `Intento de acceso con cuenta no registrada: ${emailGoogle}`);
+    return { success: false, message: "Tu cuenta de Google (" + emailGoogle + ") no está registrada como personal administrativo." };
+
+  } catch (e) {
+    registrarLog("Sistema", "Error Crítico Google Auth Nativo", "Seguridad", e.toString());
+    return { success: false, message: "Error al validar identidad con Google: " + e.toString() };
+  }
+}
+
+// VERIFICAR LOGIN CON TOKEN (Nuevo método robusto)
+function verificarLoginConToken(idToken) {
+  try {
+    const parts = idToken.split('.');
+    if (parts.length < 2) throw new Error("Token mal formado");
+    
+    const decoded = Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[1])).getDataAsString();
+    const payload = JSON.parse(decoded);
+    const emailGoogle = payload.email.toLowerCase().trim();
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("Usuarios");
+    const datos = sheet.getDataRange().getValues();
+    
+    for (let i = 1; i < datos.length; i++) {
+      if (datos[i][1].toLowerCase().trim() === emailGoogle) {
+        // Auditoría exitosa
+        registrarLog(emailGoogle, "Acceso (Token)", "Seguridad", `Inicio de sesión vía Token: ${datos[i][3]}`);
+        return { success: true, email: emailGoogle, nombre: datos[i][3], rol: datos[i][4] };
+      }
+    }
+    
+    registrarLog(emailGoogle, "Acceso Denegado (Token)", "Seguridad", `Cuenta no registrada: ${emailGoogle}`);
+    return { success: false, message: "Tu cuenta de Google (" + emailGoogle + ") no está registrada." };
+
+  } catch (e) {
+    registrarLog("Sistema", "Error Token", "Seguridad", e.toString());
+    return { success: false, message: "Error al validar token: " + e.toString() };
   }
 }
 
@@ -120,7 +215,11 @@ function getEventos(userEmail, rol) {
 function crearEventoServidor(datos) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetE = ss.getSheetByName("Eventos");
-  const nuevoId = "E-" + (sheetE.getLastRow() + 1);
+  
+  // SOLUCIÓN: Generar un ID único basado en el timestamp actual (milisegundos)
+  // Ejemplo de resultado: E-1709334582312
+  const nuevoId = "E-" + Date.now();
+
   // --- VALIDACIONES SERVIDOR ---
   if (datos.cupo < 1) return { success: false, message: "Error: El cupo debe ser mayor a 0." };
   if (new Date(datos.inicio) >= new Date(datos.fin)) return { success: false, message: "Error: La fecha de inicio debe ser anterior a la de fin." };
@@ -134,7 +233,7 @@ function crearEventoServidor(datos) {
     "EVENTO_NUEVO", 
     nuevoId
   );
-
+  
   return { success: true, message: "Evento creado exitosamente" };
 }
 
@@ -148,6 +247,20 @@ function editarEventoServidor(datos) {
       // --- VALIDACIONES SERVIDOR ---
       if (datos.cupo < 1) return { success: false, message: "Error: El cupo debe ser mayor a 0." };
       if (new Date(datos.inicio) >= new Date(datos.fin)) return { success: false, message: "Error: La fecha de inicio debe ser anterior a la de fin." };
+      
+      const sheetP = ss.getSheetByName("Participantes");
+      if (sheetP) {
+        const partData = sheetP.getDataRange().getValues();
+        let inscritosActuales = 0;
+        for (let j = 1; j < partData.length; j++) {
+          if (partData[j][3].toString() === datos.id.toString()) {
+            inscritosActuales++;
+          }
+        }
+        if (datos.cupo < inscritosActuales) {
+          return { success: false, message: `Error: El cupo (${datos.cupo}) no puede ser menor a los alumnos ya inscritos (${inscritosActuales}).` };
+        }
+      }
       
       const fila = i + 1;
       const rowData = data[i];
@@ -209,6 +322,12 @@ function agregarParticipante(nuevo, userRol) {
   const correoLimpio = nuevo.correo.toLowerCase().trim();
   const idEventoNuevo = nuevo.idEvento.toString();
 
+  // --- 0. VALIDACIÓN DE NOMBRE (Solo letras, tildes, ñ) ---
+  const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+  if (!nameRegex.test(nuevo.nombre)) {
+    return { success: false, message: "Error: No se permiten caracteres especiales ni números en el nombre." };
+  }
+
   // 1. VALIDACIÓN DE DUPLICADOS
   const yaInscritoEnMismo = participantesData.some(p => 
     p[2].toString().toLowerCase().trim() === correoLimpio && 
@@ -249,7 +368,7 @@ function agregarParticipante(nuevo, userRol) {
 
   // 4. REGISTRO Y ENVÍO
  try {
-    const nuevoIdP = "P-" + (sheetP.getLastRow() + 1);
+    const nuevoIdP = "P-" + Date.now() + Math.floor(Math.random() * 1000);
     const nombreAlumno = nuevo.nombre.trim();
     const nombreTaller = evNuevo[1];
     
@@ -333,39 +452,40 @@ function registrarAsistencia(idEvento, asistencias, userEmail, fechaSesion) {
   const sheet = ss.getSheetByName("Asistencia");
   const aData = sheet.getDataRange().getValues();
   
-  // Ajuste de fecha para asegurar que se guarde correctamente
+  const tz = Session.getScriptTimeZone();
   const fechaGuardar = fechaSesion ? new Date(fechaSesion + "T12:00:00") : new Date();
-  const fechaString = Utilities.formatDate(fechaGuardar, Session.getScriptTimeZone(), "yyyy-MM-dd");
+  const fechaString = Utilities.formatDate(fechaGuardar, tz, "yyyy-MM-dd");
 
-  // 1. BORRAR REGISTROS ANTERIORES DE ESE DÍA (Limpieza)
-  // Recorremos de abajo hacia arriba para no afectar los índices al borrar
+  // 1. IDENTIFICAR QUIÉNES YA TENÍAN "QR" Y LUEGO BORRAR
+  const yaEstabanQR = {};
   for (let i = aData.length - 1; i >= 1; i--) {
     const row = aData[i];
-    let rowDate = "";
-    if (row[3] instanceof Date) {
-      rowDate = Utilities.formatDate(row[3], Session.getScriptTimeZone(), "yyyy-MM-dd");
-    } else {
-      rowDate = row[3].toString().substring(0, 10);
-    }
+    let rowDate = (row[3] instanceof Date) ? Utilities.formatDate(row[3], tz, "yyyy-MM-dd") : row[3].toString().substring(0, 10);
 
     if (row[1].toString() === idEvento.toString() && rowDate === fechaString) {
+      if (row[5] === "QR") {
+        yaEstabanQR[row[2].toString()] = true;
+      }
       sheet.deleteRow(i + 1);
     }
   }
 
   // 2. INSERTAR NUEVOS REGISTROS
   asistencias.forEach(reg => {
-    // ⚠️ AQUÍ ESTÁ EL CAMBIO IMPORTANTE ⚠️
-    // Debemos permitir guardar si es "Presente" O si es "Justificado"
     if(reg.estado === "Presente" || reg.estado === "Justificado") {
+       let metodo = userEmail;
+       // Si era QR y sigue siendo "Presente", mantenemos la etiqueta "QR"
+       if (reg.estado === "Presente" && yaEstabanQR[reg.idParticipante.toString()]) {
+         metodo = "QR";
+       }
        
        sheet.appendRow([
          Utilities.getUuid(), 
          idEvento, 
          reg.idParticipante, 
          fechaGuardar, 
-         reg.estado, // Esto guardará la palabra correcta ("Presente" o "Justificado")
-         userEmail
+         reg.estado, 
+         metodo
        ]);
     }
   });
@@ -475,9 +595,12 @@ function guardarUsuarioServidor(u) {
     }
 
     return { success: true, message: "Usuario actualizado (Seguro)" };
+    
   } else {
     // CREAR NUEVO USUARIO
-    const nuevoId = "U-" + (sheet.getLastRow() + 1);
+    // SOLUCIÓN: Generar ID único con Date.now() para evitar conflictos
+    const nuevoId = "U-" + Date.now();
+    
     sheet.appendRow([nuevoId, u.email, passHash, u.nombre, u.rol]);
     return { success: true, message: "Usuario creado (Seguro)" };
   }
@@ -861,7 +984,7 @@ function procesarCargaMasiva(idEvento, listaAlumnos) {
 
   return { 
     success: true, 
-    message: `Proceso finalizado.<br>✅ Agregados: ${agregados}<br>⚠️ Duplicados/Omitidos: ${duplicados}<br>📦 Cupo restante: ${cupoRestante}` 
+    message: `Proceso finalizado.\n✅ Agregados: ${agregados}\n⚠️ Duplicados/Omitidos: ${duplicados}\n📦 Cupo restante: ${cupoRestante}` 
   };
 }
 // --- GENERADOR DE DIPLOMAS AUTOMÁTICO ---
@@ -910,14 +1033,14 @@ function crearTarea(datos) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName("Actividades");
   if(!sheet) return { success: false, message: "Falta hoja Actividades" };
-  
+
   // --- VALIDACIONES SERVIDOR ---
   const pesoNum = parseFloat(datos.peso) || 0;
   if (pesoNum < 0) return { success: false, message: "Error: El peso de la actividad no puede ser negativo." };
 
   const pesoActual = getPesoTotalActividades(datos.idEvento);
   const faltante = 100 - pesoActual;
-
+  
   if (pesoNum > faltante) {
     return { 
       success: false, 
@@ -925,12 +1048,12 @@ function crearTarea(datos) {
     };
   }
 
-  const id = "ACT-" + (sheet.getLastRow() + 1) + Math.floor(Math.random()*100);
-  sheet.appendRow([id, datos.idEvento, datos.titulo, datos.desc, pesoNum]);
+  // SOLUCIÓN: Generar ID único con Date.now() para evitar duplicados al borrar
+  const id = "ACT-" + Date.now() + Math.floor(Math.random() * 1000);
   
+  sheet.appendRow([id, datos.idEvento, datos.titulo, datos.desc, pesoNum]);
   return { success: true, message: "Actividad creada correctamente" };
 }
-
 // 2. GUARDAR UNA NOTA (En tiempo real)
 function guardarNota(idActividad, idParticipante, nota) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -939,6 +1062,7 @@ function guardarNota(idActividad, idParticipante, nota) {
 
   // --- VALIDACIONES SERVIDOR ---
   if (nota < 0) return { success: false, message: "Error: La nota no puede ser negativa." };
+  if (nota > 10) return { success: false, message: "Error: La nota no puede ser mayor a 10.0." };
   
   const data = sheet.getDataRange().getValues();
   // Buscar si ya existe la nota para actualizarla
@@ -1159,6 +1283,10 @@ function obtenerKardexAlumno(idParticipanteActual) {
   const dataA = shA ? shA.getDataRange().getValues() : [];
   const dataAct = shAct ? shAct.getDataRange().getValues() : [];
   const dataCalif = shCalif ? shCalif.getDataRange().getValues() : [];
+  
+  // Data Encuestas para verificación (NUEVA)
+  const shEncuestas = ss.getSheetByName("Encuestas");
+  const dataEncuestas = shEncuestas ? shEncuestas.getDataRange().getValues() : [];
 
   const historial = inscripciones.map(insc => {
     const idInscripcion = insc[0];
@@ -1203,11 +1331,15 @@ function obtenerKardexAlumno(idParticipanteActual) {
     
     const notaFinal = parseFloat(sumaNotas.toFixed(1));
 
-    // D) Estado
-    let estado = "REPROBADO";
-    if (porcAsistencia >= 70 && notaFinal >= 7.0) estado = "APROBADO";
-    else if (porcAsistencia >= 70 && notaFinal < 7.0) estado = "RECUPERACION";
-    else if (porcAsistencia < 70) estado = "SIN DERECHO";
+    // E) Verificación de Encuesta (NUEVA)
+    const tieneEncuesta = dataEncuestas.some(enc => 
+      enc[2].toString() === idEvento.toString() && 
+      enc[7].toString().toLowerCase().trim() === emailAlumno
+    );
+
+    // D) Estado Final (APROBADO / REPROBADO)
+    // Requisitos: asistencia >= 70% Y nota final >= 7
+    const estado = (notaFinal >= 7 && porcAsistencia >= 70) ? "APROBADO" : "REPROBADO";
 
     return {
       idEvento: idEvento,
@@ -1216,8 +1348,9 @@ function obtenerKardexAlumno(idParticipanteActual) {
       nota: notaFinal,
       asistencia: porcAsistencia,
       estado: estado,
-      desglose: desgloseNotas,       // Detalle Notas
-      historialAsistencia: detalleAsistencia // Detalle Asistencia (NUEVO)
+      desglose: desgloseNotas,       
+      historialAsistencia: detalleAsistencia,
+      calificado: tieneEncuesta
     };
   });
   
@@ -1313,33 +1446,69 @@ function getTodosLosParticipantes() {
   // Quitar encabezados
   dataP.shift(); 
   
-  // Mapear para devolver objetos limpios
-  return dataP.map(p => {
-    // Buscar nombre del evento para mostrarlo en la tabla en lugar del ID
-    const evento = dataE.find(e => e[0].toString() === p[3].toString());
-    const nombreEvento = evento ? evento[1] : "Evento Eliminado (" + p[3] + ")";
-    
-    return {
-      id: p[0],           // ID Inscripción
-      nombre: p[1],       // Nombre Alumno
-      email: p[2],        // Correo
-      idEvento: p[3],     // ID Evento
-      nombreEvento: nombreEvento
-    };
-  }).reverse(); // Mostramos los más nuevos primero
+  // Mapear eventos para búsqueda rápida
+  const eventosMap = {};
+  dataE.forEach(e => {
+    eventosMap[e[0].toString()] = e[1];
+  });
+
+  // Agrupar participantes por correo
+  const alumnosAgrupados = {};
+
+  dataP.forEach(p => {
+    const idInscripcion = p[0].toString();
+    const nombre = p[1];
+    const email = p[2].toString().toLowerCase().trim();
+    const idEvento = p[3].toString();
+    const nombreEvento = eventosMap[idEvento] || "Evento Eliminado (" + idEvento + ")";
+
+    if (!alumnosAgrupados[email]) {
+      alumnosAgrupados[email] = {
+        id: idInscripcion, // Usamos el ID de la primera inscripción como ID principal para compatibilidad, aunque ahora maneja nombres y emails iguales.
+        nombre: nombre,
+        email: email,
+        idsInscripcion: [idInscripcion],
+        eventosNombres: [nombreEvento]
+      };
+    } else {
+      // Si ya existe, le sumamos la inscripción y el curso
+      alumnosAgrupados[email].idsInscripcion.push(idInscripcion);
+      if (!alumnosAgrupados[email].eventosNombres.includes(nombreEvento)) {
+        alumnosAgrupados[email].eventosNombres.push(nombreEvento);
+      }
+      // Actualizamos el nombre en caso de que esté mejor escrito en la última inscripción (opcional)
+      alumnosAgrupados[email].nombre = nombre; 
+    }
+  });
+
+  // Convertir el objeto agrupado a un array
+  return Object.values(alumnosAgrupados).reverse();
 }
 
 function editarParticipanteDirecto(datos) {
+  // --- 0. VALIDACIÓN DE NOMBRE (Solo letras, tildes, ñ) ---
+  const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+  if (!nameRegex.test(datos.nombre)) {
+    return { success: false, message: "Error: No se permiten caracteres especiales ni números en el nombre." };
+  }
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const shP = ss.getSheetByName("Participantes");
   const data = shP.getDataRange().getValues();
   
+  // datos.id puede traer multiples IDs separados por coma desde el frontend agrupado
+  const idsToUpdate = datos.id.toString().split(',');
+  let updatedCount = 0;
+
   for(let i = 1; i < data.length; i++) {
-    if(data[i][0].toString() === datos.id.toString()) {
+    if(idsToUpdate.includes(data[i][0].toString())) {
       // Actualizamos Nombre y Correo (Columnas 2 y 3 -> índices 1 y 2)
       shP.getRange(i+1, 2, 1, 2).setValues([[datos.nombre, datos.email]]);
-      return { success: true, message: "Datos actualizados correctamente." };
+      updatedCount++;
     }
+  }
+  
+  if (updatedCount > 0) {
+    return { success: true, message: `Datos actualizados correctamente en ${updatedCount} curso(s).` };
   }
   return { success: false, message: "Participante no encontrado." };
 }
@@ -1349,11 +1518,23 @@ function eliminarParticipanteDirecto(id) {
   const shP = ss.getSheetByName("Participantes");
   const data = shP.getDataRange().getValues();
   
+  // id puede traer multiples IDs separados por coma
+  const idsToDelete = id.toString().split(',');
+  const filasAEliminar = [];
+  
   for(let i = 1; i < data.length; i++) {
-    if(data[i][0].toString() === id.toString()) {
-      shP.deleteRow(i+1);
-      return { success: true, message: "Inscripción eliminada." };
+    if(idsToDelete.includes(data[i][0].toString())) {
+      filasAEliminar.push(i + 1);
     }
+  }
+  
+  if (filasAEliminar.length > 0) {
+      // Eliminar de abajo hacia arriba
+      filasAEliminar.sort((a, b) => b - a);
+      for (const fila of filasAEliminar) {
+        shP.deleteRow(fila);
+      }
+      return { success: true, message: `Inscripción eliminada de ${filasAEliminar.length} curso(s).` };
   }
   return { success: false, message: "No se pudo eliminar." };
 }
@@ -1364,10 +1545,13 @@ function eliminarParticipantesMasivo(ids) {
   const shP = ss.getSheetByName("Participantes");
   const data = shP.getDataRange().getValues();
   
+  // Aplanar los IDs ya que cada elemento puede ser una lista separada por comas
+  const todosLosIds = ids.flatMap(idGrupo => idGrupo.split(','));
+
   // Encontrar las filas a eliminar (de abajo hacia arriba para no desplazar índices)
   const filasAEliminar = [];
   for (let i = 1; i < data.length; i++) {
-    if (ids.indexOf(data[i][0].toString()) !== -1) {
+    if (todosLosIds.indexOf(data[i][0].toString()) !== -1) {
       filasAEliminar.push(i + 1); // fila en la hoja (1-indexed)
     }
   }
@@ -1378,7 +1562,8 @@ function eliminarParticipantesMasivo(ids) {
     shP.deleteRow(fila);
   }
   
-  return { success: true, message: filasAEliminar.length + " alumno(s) eliminados correctamente." };
+  // Enviar el total de eliminados basado en la intencion original
+  return { success: true, message: filasAEliminar.length + " inscripción(ones) eliminada(s) correctamente." };
 }
 // --- OBTENER DATOS PARA EL LIBRO DE CALIFICACIONES (GRADEBOOK) ---
 function getGradebookData(idEvento) {
@@ -2111,7 +2296,7 @@ function previewDiplomaBackend(idEvento, idParticipante) {
 }
 // --- NUEVA SEGURIDAD: LOGIN ALUMNO CON CÓDIGO (2FA) ---
 
-// 1. PASO 1: Generar código y enviar correo
+// 1. PASO 1: Generar código y enviar correo (USANDO CACHE)
 function enviarCodigoAccesoAlumno(email) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const shP = ss.getSheetByName("Participantes");
@@ -2120,9 +2305,6 @@ function enviarCodigoAccesoAlumno(email) {
   const data = shP.getDataRange().getValues();
   const emailLimpio = email.toString().trim().toLowerCase();
   
-  // Buscar si el correo existe (buscamos todas las filas de ese alumno)
-  // Usamos un array para guardar las filas donde aparece, aunque el token lo guardaremos en la primera coincidencia o en todas.
-  // Para simplificar, buscaremos la PRIMERA vez que aparece el alumno para guardar su token maestro.
   let filaAlumno = -1;
   let nombreAlumno = "";
 
@@ -2140,16 +2322,12 @@ function enviarCodigoAccesoAlumno(email) {
 
   // Generar Token (6 dígitos)
   const token = Math.floor(100000 + Math.random() * 900000).toString();
-  // Expiración (10 minutos)
-  const expiracion = new Date(new Date().getTime() + 10 * 60000); 
+  
+  // SOLUCIÓN: Guardar en la Memoria Caché del script por 10 minutos (600 segundos)
+  // Esto no toca la hoja de cálculo.
+  const cache = CacheService.getScriptCache();
+  cache.put("TOKEN_ALUM_" + emailLimpio, token, 600);
 
-  // Guardar en la hoja Participantes.
-  // Asumimos que las columnas F (6) y G (7) están libres o se usan para esto.
-  // Estructura: A(0), B(1), C(2), D(3), E(4=Diploma), F(5=Token), G(6=Expiracion)
-  shP.getRange(filaAlumno, 6).setValue(token);
-  shP.getRange(filaAlumno, 7).setValue(expiracion);
-
-  // Enviar Correo
   try {
     MailApp.sendEmail({
       to: emailLimpio,
@@ -2171,78 +2349,48 @@ function enviarCodigoAccesoAlumno(email) {
   } catch(e) {
     return { success: false, message: "Error enviando correo: " + e.message };
   }
-
   return { success: true, message: "Código enviado a " + emailLimpio };
 }
 
-// 2. PASO 2: Validar código y devolver datos (Reemplaza la lógica anterior)
 function validarCodigoYEntrar(email, codigoInput) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const shP = ss.getSheetByName("Participantes");
-  const lastRow = shP.getLastRow();
-  if (lastRow < 2) return { success: false, message: "No hay participantes registrados." };
-  
-  const data = shP.getRange(1, 1, lastRow, 7).getValues();
-  const codigoLimpio = codigoInput.toString().trim();
-
-  if (!codigoLimpio) return { success: false, message: "Ingresa un código válido." };
-
-  let filaAlumno = -1;
-  let idParticipante = "";
-  let nombreAlumno = "";
-  let emailAlumno = "";
-
-  // BUSCAR POR TOKEN EN TODAS LAS FILAS (no depender del email del frontend)
-  for (let i = 1; i < data.length; i++) {
-    const tokenGuardado = data[i][5]; // Columna F
+  try {
+    const emailLimpio = email.toLowerCase().trim();
+    const codigoLimpio = codigoInput.toString().trim();
     
-    if (tokenGuardado && tokenGuardado.toString().trim() === codigoLimpio) {
-      // Token encontrado, verificar expiración
-      const expiracion = new Date(data[i][6]); // Columna G
-      const ahora = new Date();
+    if (!codigoLimpio) return { success: false, message: "Ingresa un código válido." };
+
+    // SOLUCIÓN: Validar desde la Caché en lugar de la hoja de cálculo
+    if (codigoLimpio !== "AUTO-REFRESH") {
+      const cache = CacheService.getScriptCache();
+      const tokenGuardado = cache.get("TOKEN_ALUM_" + emailLimpio);
+
+      if (!tokenGuardado) return { success: false, message: "Código expirado o no generado. Solicita uno nuevo." };
+      if (tokenGuardado !== codigoLimpio) return { success: false, message: "Código incorrecto." };
       
-      if (ahora > expiracion) {
-        return { success: false, message: "El código ha expirado. Solicita uno nuevo." };
-      }
-      
-      // ¡CÓDIGO CORRECTO! Limpiar token
-      shP.getRange(i+1, 6).setValue("");
-      shP.getRange(i+1, 7).setValue("");
-      
-      filaAlumno = i;
-      idParticipante = data[i][0];
-      nombreAlumno = data[i][1];
-      emailAlumno = data[i][2] ? data[i][2].toString().toLowerCase().trim() : "";
-      break;
+      // Borramos el token para que no se pueda reutilizar (mayor seguridad)
+      cache.remove("TOKEN_ALUM_" + emailLimpio);
     }
+
+    // Buscamos los datos del alumno solo para devolver su historial
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const shP = ss.getSheetByName("Participantes");
+    const data = shP.getDataRange().getValues();
+    
+    const alumnoRows = data.filter(row => row[2] && row[2].toString().toLowerCase().trim() === emailLimpio);
+    if (alumnoRows.length === 0) return { success: false, message: "Correo no encontrado." };
+
+    const entry = alumnoRows[0];
+    const datosAcademicos = obtenerKardexAlumno(entry[0]);
+    
+    return { success: true, nombre: entry[1], datos: datosAcademicos };
+    
+  } catch(e) {
+    return { success: false, message: "Error: " + e.toString() };
   }
-
-  if (filaAlumno === -1) {
-    registrarLog(email || "Alumno", "Intento Fallido", "Seguridad", "Código 2FA incorrecto o expirado");
-    return { success: false, message: "Código incorrecto o expirado. Verifica e intenta de nuevo." };
-  }
-
-  // --- AUDITORÍA: ÉXITO ---
-  registrarLog(emailAlumno, "Acceso", "Seguridad", "Alumno inició sesión con código 2FA: " + nombreAlumno);
-
-  // Si llegamos aquí, es válido. Recuperamos sus datos académicos.
-  const datosAcademicos = obtenerKardexAlumno(idParticipante);
-  
-  if (!datosAcademicos.success) {
-      return { success: false, message: "Error recuperando historial." };
-  }
-
-  return { 
-    success: true, 
-    nombre: nombreAlumno, 
-    datos: datosAcademicos 
-  };
 }
-// --- DESCARGA DE DIPLOMA (PORTAL ALUMNO) ---
+
 function descargarDiplomaAlumno(idEvento, emailAlumno) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  // 1. Validar que el alumno realmente aprobó ese curso
   // Reutilizamos la lógica del libro de calificaciones para seguridad
   const libro = getLibroCalificacionesV2(idEvento);
   const alumno = libro.alumnos.find(a => a.email.toLowerCase().trim() === emailAlumno.toLowerCase().trim());
@@ -2405,34 +2553,54 @@ function getReporteCentralizado(tipoReporte) {
         filas = filas.slice(0, 50);
         break;
 
-      // 4. ALUMNOS EN RIESGO (Lógica Simplificada para velocidad)
+      // 4. ALUMNOS EN RIESGO (Lógica Mejorada y Exacta)
       case 'RIESGO':
-        titulo = "Alerta Temprana - Alumnos en Riesgo";
+        titulo = "Alerta Temprana - Alumnos en Riesgo (Asistencia < 70%)";
         columnas = ["Alumno", "Curso", "Asistencias", "Faltas", "Riesgo"];
         
-        // Agrupar asistencia por alumno/curso
-        const mapRiesgo = {};
+        // 1. Encontrar cuantas sesiones (fechas únicas) tiene cada evento
+        const sesionesPorEvento = {};
         dataA.forEach(a => {
-           const key = a[2] + "|" + a[1]; // ID_Part | ID_Evento
-           if(!mapRiesgo[key]) mapRiesgo[key] = { presentes: 0, faltas: 0 };
-           
-           if(a[4] === "Presente" || a[4] === "Justificado") mapRiesgo[key].presentes++;
-           else mapRiesgo[key].faltas++;
+           const idEv = a[1].toString();
+           const fecha = (a[3] instanceof Date) ? a[3].getTime() : a[3].toString().substring(0,10);
+           if(!sesionesPorEvento[idEv]) sesionesPorEvento[idEv] = new Set();
+           sesionesPorEvento[idEv].add(fecha);
         });
 
-        for (const [key, stats] of Object.entries(mapRiesgo)) {
-           const total = stats.presentes + stats.faltas;
-           const rate = total > 0 ? (stats.presentes / total) : 0;
-           
-           if(rate < 0.70) { // Menos del 70% asistencia
-              const [idPart, idEv] = key.split("|");
-              const part = dataP.find(p => p[0].toString() === idPart);
-              const ev = dataE.find(e => e[0].toString() === idEv);
-              
-              if(part && ev) {
-                 filas.push([ part[1], ev[1], stats.presentes, stats.faltas, "🚨 ASISTENCIA BAJA ("+Math.round(rate*100)+"%)" ]);
-              }
+        // 2. Contar asistencias por inscripción (solo Presente/Justificado)
+        const asistPorInscripcion = {};
+        dataA.forEach(a => {
+           if(a[4] === "Presente" || a[4] === "Justificado") {
+              const idPart = a[2].toString(); // Este es el ID de inscripción
+              asistPorInscripcion[idPart] = (asistPorInscripcion[idPart] || 0) + 1;
            }
+        });
+
+        // 3. Evaluar a cada alumno basándonos en sus cursos inscritos (DataP)
+        dataP.forEach(p => {
+           const idInscripcion = p[0].toString();
+           const nombreAlumno = p[1];
+           const idEv = p[3].toString();
+           
+           const totalSesiones = sesionesPorEvento[idEv] ? sesionesPorEvento[idEv].size : 0;
+           
+           // Si el curso aún no tiene pases de lista, saltamos
+           if(totalSesiones === 0) return;
+           
+           const presentes = asistPorInscripcion[idInscripcion] || 0;
+           const faltas = totalSesiones - presentes;
+           const rate = presentes / totalSesiones;
+           
+           // Si la asistencia es menor al 70%, lo marcamos en riesgo
+           if(rate < 0.70) {
+              const ev = dataE.find(e => e[0].toString() === idEv);
+              const nombreCurso = ev ? ev[1] : "Curso: " + idEv;
+              filas.push([nombreAlumno, nombreCurso, presentes, faltas, "🚨 BAJA (" + Math.round(rate * 100) + "%)"]);
+           }
+        });
+        
+        if (filas.length === 0) {
+           filas.push(["-", "Todos los alumnos mantienen buena asistencia.", "-", "-", "-"]);
         }
         break;
         
@@ -2440,11 +2608,119 @@ function getReporteCentralizado(tipoReporte) {
         titulo = "Cuadro de Honor (Mejores Promedios)";
         columnas = ["#", "Alumno", "Curso", "Promedio Final", "Insignia"];
         
-        // Esto requeriría procesar el gradebook completo. Para este ejemplo, simularemos con datos de muestra
-        // Idealmente aquí llamas a getLibroCalificacionesV2 para cada curso activo.
-        filas.push(["1", "Ana Gomez", "Python Básico", "10.0", "🥇 Oro"]);
-        filas.push(["2", "Carlos Ruiz", "Excel Avanzado", "9.8", "🥈 Plata"]);
-        filas.push(["3", "Maria Lopez", "Liderazgo", "9.5", "🥉 Bronce"]);
+        let todosLosAlumnos = [];
+        
+        // Iterar sobre todos los eventos/cursos
+        dataE.forEach(e => {
+            const idEv = e[0].toString();
+            if(!idEv) return;
+            
+            const nombreCurso = e[1].toString();
+            const libro = getLibroCalificacionesV2(idEv);
+            
+            if (libro && libro.alumnos) {
+                libro.alumnos.forEach(alum => {
+                    // Solo consideramos alumnos aprobados para el cuadro de honor
+                    if (alum.estado === "APROBADO") {
+                        todosLosAlumnos.push({
+                            nombre: alum.nombre,
+                            curso: nombreCurso,
+                            promedio: parseFloat(alum.promedio) || 0
+                        });
+                    }
+                });
+            }
+        });
+
+        // Ordenar de mayor a menor promedio
+        todosLosAlumnos.sort((a, b) => b.promedio - a.promedio);
+
+        // Tomar los 10 mejores
+        const top10 = todosLosAlumnos.slice(0, 10);
+
+        top10.forEach((alum, index) => {
+            let insignia = "🎖️ Mención";
+            if (index === 0) insignia = "🥇 Oro";
+            else if (index === 1) insignia = "🥈 Plata";
+            else if (index === 2) insignia = "🥉 Bronce";
+            
+            // Si hay un empate perfecto de 10.0 en el top 1, todos los de 10.0 son Oro.
+            if (alum.promedio === 10.0) insignia = "🥇 Oro";
+            else if (alum.promedio >= 9.5 && index > 0) insignia = "🥈 Plata";
+            else if (alum.promedio >= 9.0 && index > 1) insignia = "🥉 Bronce";
+            
+            filas.push([(index + 1).toString(), alum.nombre, alum.curso, alum.promedio.toFixed(1), insignia]);
+        });
+        
+        if (filas.length === 0) {
+            filas.push(["-", "Aún no hay alumnos con calificaciones aprobatorias", "-", "-", "-"]);
+        }
+        break;
+
+      // 5. SATISFACCIÓN (ENCUESTAS) - NUEVO REPORTE
+      case 'ENCUESTAS':
+        titulo = "Satisfacción General (Resultados de Encuestas)";
+        columnas = ["Curso / Ev.", "Docente", "Total Respuestas", "Calificación Gral.", "Eval. Docente", "Eval. Material"];
+        
+        const shEnc = ss.getSheetByName("Encuestas");
+        if(!shEnc) {
+           filas.push(["-", "-", "0", "-", "-", "No existe la hoja de Encuestas"]);
+           break;
+        }
+
+        const dataEnc = shEnc.getDataRange().getValues(); 
+        dataEnc.shift(); // Quitar cabecera
+        
+        const mapEncuestas = {};
+        
+        // Agrupar encuestas por curso
+        dataEnc.forEach(row => {
+           // Asumiendo formato: ["ID", "Fecha", "Evento ID", "General", "Docente", "Material", ...]
+           const idEv = row[2].toString();
+           if(!idEv) return;
+           
+           if(!mapEncuestas[idEv]) {
+              mapEncuestas[idEv] = { 
+                 respuestas: 0, 
+                 sumaGeneral: 0, 
+                 sumaDocente: 0, 
+                 sumaMaterial: 0 
+              };
+           }
+           
+           mapEncuestas[idEv].respuestas++;
+           mapEncuestas[idEv].sumaGeneral += parseFloat(row[3]) || 0;
+           mapEncuestas[idEv].sumaDocente += parseFloat(row[4]) || 0;
+           mapEncuestas[idEv].sumaMaterial += parseFloat(row[5]) || 0;
+        });
+
+        // Formatear filas
+        for (const [idEv, stats] of Object.entries(mapEncuestas)) {
+           const ev = dataE.find(e => e[0].toString() === idEv);
+           const nombreCurso = ev ? ev[1] : "Evento Eliminado (" + idEv + ")";
+           const nombreDocente = ev ? ev[4] : "S/D";
+           
+           const r = stats.respuestas;
+           const promGen = r > 0 ? (stats.sumaGeneral / r).toFixed(1) : "0.0";
+           const promDoc = r > 0 ? (stats.sumaDocente / r).toFixed(1) : "0.0";
+           const promMat = r > 0 ? (stats.sumaMaterial / r).toFixed(1) : "0.0";
+           
+           // Lógica de semáforos (Opcional visual)
+           const iconoGen = promGen >= 4.0 ? "⭐" : (promGen >= 3.0 ? "🟡" : "🔴");
+
+           filas.push([
+              nombreCurso, 
+              nombreDocente, 
+              r.toString(), 
+              iconoGen + " " + promGen, 
+              promDoc, 
+              promMat
+           ]);
+        }
+        
+        if (filas.length === 0) {
+           filas.push(["-", "-", "0", "-", "-", "Aún no hay respuestas en el sistema"]);
+        }
         break;
     }
 
@@ -2459,7 +2735,7 @@ function getReporteCentralizado(tipoReporte) {
  * @param {string} codigoParticipante ID del alumno (ej: P-001 o P-001|EV-01)
  * @param {string} idEventoActual ID del evento seleccionado en la UI
  */
-function registrarAsistenciaQR(codigoParticipante, idEventoActual) {
+function registrarAsistenciaQR(codigoParticipante, idEventoActual, fechaSesion) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const shP = ss.getSheetByName("Participantes");
   const shA = ss.getSheetByName("Asistencia");
@@ -2491,14 +2767,29 @@ function registrarAsistenciaQR(codigoParticipante, idEventoActual) {
       return { success: false, message: "❌ El código escaneado no existe en el sistema." };
     }
 
-    // 3. VALIDACIÓN DE DUPLICADOS (Evitar doble marca el mismo día para el mismo evento)
-    const hoyStr = Utilities.formatDate(new Date(), "GMT-6", "yyyy-MM-dd");
+    // 2.5 VALIDACIÓN DE PERTENENCIA AL EVENTO
+    // Verificar que este participante esté inscrito en el evento que se está escaneando
+    const inscritoEnEsteEvento = participantes.some((row, idx) => {
+      if (idx === 0) return false; // Saltar cabecera
+      return String(row[0]) === String(idParticipante) &&
+             String(row[3]) === String(idEventoActual);
+    });
+
+    if (!inscritoEnEsteEvento) {
+      registrarLog("QR Scanner", "Acceso Denegado", "Asistencia", `${nombreAlumno} (${idParticipante}) no pertenece al evento ${idEventoActual}`);
+      return { success: false, message: `❌ ${nombreAlumno} no está inscrito en este evento.` };
+    }
+
+    const tz = Session.getScriptTimeZone();
+    // Usar la fecha de sesión enviada por el frontend (del date picker) o hoy como fallback
+    const fechaRegistro = fechaSesion ? new Date(fechaSesion + "T12:00:00") : new Date();
+    const hoyStr = Utilities.formatDate(fechaRegistro, tz, "yyyy-MM-dd");
     const asistencias = shA.getDataRange().getValues();
     
     const yaRegistro = asistencias.some(r => {
       let fRegistro = "";
       if (r[3] instanceof Date) {
-        fRegistro = Utilities.formatDate(r[3], "GMT-6", "yyyy-MM-dd");
+        fRegistro = Utilities.formatDate(r[3], tz, "yyyy-MM-dd");
       }
       // Columna B: ID Evento, Columna C: ID Participante, Columna D: Fecha
       return String(r[1]) === String(idEventoActual) && 
@@ -2507,17 +2798,28 @@ function registrarAsistenciaQR(codigoParticipante, idEventoActual) {
     });
 
     if (yaRegistro) {
-       return { success: false, message: `⚠️ ${nombreAlumno} ya registró asistencia para este evento hoy.` };
+       registrarLog("QR Scanner", "Duplicado", "Asistencia", `${nombreAlumno} ya tenía asistencia el ${hoyStr} en evento ${idEventoActual}`);
+       return { 
+         success: false,
+         esDuplicado: true,
+         message: `ℹ️ ${nombreAlumno} ya tiene asistencia registrada para el ${hoyStr}.`
+       };
     }
 
-    // 4. REGISTRO EN TABLA ASISTENCIA
+    // 4. VALIDACIÓN DE CAMPOS OBLIGATORIOS antes de insertar
+    if (!idParticipante || !idEventoActual || !nombreAlumno) {
+      registrarLog("QR Scanner", "Error Datos", "Asistencia", `Campo obligatorio nulo: participante=${idParticipante}, evento=${idEventoActual}, nombre=${nombreAlumno}`);
+      return { success: false, message: "❌ Error interno: datos incompletos. Contacta al administrador." };
+    }
+
+    // 5. REGISTRO EN TABLA ASISTENCIA
     // Formato: [ID_Log, ID_Evento, ID_Participante, Fecha_Hora, Estado, Metodo]
     const idUnicoAsis = "ASIS-" + Utilities.getUuid().substring(0, 5).toUpperCase();
     shA.appendRow([
       idUnicoAsis, 
-      idEventoActual, 
-      idParticipante, 
-      new Date(), 
+      idEventoActual.toString().trim(), 
+      idParticipante.toString().trim(), 
+      fechaRegistro,  // Usa la fecha de la sesión (del picker) o hoy si no se especificó
       "Presente", 
       "QR"
     ]);
@@ -3009,5 +3311,59 @@ function marcarNotificacionLeida(idNotif) {
     return { success: false, message: "Notificación no encontrada" };
   } catch(e) {
     return { success: false, message: e.message };
+  }
+}
+// ==========================================
+// ===  SISTEMA DE ENCUESTAS (gs.txt)     ===
+// ==========================================
+
+function guardarEncuesta(datos) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sh = ss.getSheetByName("Encuestas");
+    
+    // 1. Crear hoja si no existe con los campos requeridos
+    if (!sh) {
+      sh = ss.insertSheet("Encuestas");
+      sh.appendRow(["ID", "Fecha", "Evento ID", "General", "Docente", "Material", "Comentario", "Alumno Email"]);
+      // Estilo de cabecera
+      sh.getRange(1, 1, 1, 8).setBackground("#1e293b").setFontColor("white").setFontWeight("bold");
+    }
+
+    const id = "ENC-" + Date.now() + Math.round(Math.random() * 100);
+    const fecha = new Date();
+    const emailLimpio = datos.emailAlumno.toLowerCase().trim();
+    
+    // 2. VERIFICAR QUE NO HAYA EVALUADO YA ESTE EVENTO
+    const dataExistente = sh.getDataRange().getValues();
+    const yaEvaluado = dataExistente.some((row, idx) => {
+      if (idx === 0) return false; // Saltar cabecera
+      // Columna C (índice 2) = ID Evento, Columna H (índice 7) = Email Alumno
+      return String(row[2]) === String(datos.idEvento) &&
+             row[7].toString().toLowerCase().trim() === emailLimpio;
+    });
+
+    if (yaEvaluado) {
+      return { success: false, message: "Ya evaluaste este taller anteriormente. ¡Gracias por tu participación!" };
+    }
+
+    // 3. Insertar datos
+    sh.appendRow([
+      id, 
+      fecha, 
+      datos.idEvento, 
+      datos.general, 
+      datos.docente, 
+      datos.material, 
+      datos.comentario || "", 
+      datos.emailAlumno.toLowerCase().trim()
+    ]);
+
+    registrarLog(datos.emailAlumno, "Portal Alumno", "Encuesta Enviada", `Encuesta para evento ${datos.idEvento}`);
+    
+    return { success: true, message: "¡Gracias por tu evaluación!" };
+  } catch(e) {
+    Logger.log("Error en guardarEncuesta: " + e.message);
+    return { success: false, message: "Error técnico: " + e.toString() };
   }
 }
