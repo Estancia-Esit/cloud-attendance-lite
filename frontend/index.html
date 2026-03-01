@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <base target="_top">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
   
@@ -11,6 +12,11 @@
 
   
   <?!= incluir('css'); ?>
+  <script>
+    // Variables de servidor inyectadas vía Template (disponibles para js.txt)
+    window.G_LOGIN_MODE = "<?!= loginMode ?>";
+    window.G_LOGIN_TOKEN = "<?!= loginToken ?>";
+  </script>
 </head>
 <body>
 
@@ -24,35 +30,57 @@
         <span id="login-msg">Verificando credenciales...</span>
       </div>
       
-      <div class="input-wrapper-modern">
-        <input type="email" id="email" class="input-flat" placeholder="usuario@correo.com">
-        <div class="icon-box">
-           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#555" width="18px" height="18px"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-        </div>
-      </div>
-      
-      <div id="pass-container" class="input-wrapper-modern transition-height">
-        <input type="password" id="pass" class="input-flat" placeholder="••••••••">
-        <div class="icon-box" onclick="togglePass()" style="cursor: pointer;">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#555" width="18px" height="18px"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5 5-5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-        </div>
-      </div>
-      
-      <div style="margin-top: 2rem;">
-        <button class="btn-login-white" onclick="procesarLogin()">
-          <span id="btn-text">Iniciar Sesión</span>
-          <div id="btn-loader" class="spinner-blue hidden"></div>
+      <!-- NUEVA PANTALLA DE SELECCIÓN (Gateway) -->
+      <div id="gateway-selection">
+        <p class="gateway-subtitle">Selecciona tu método de acceso:</p>
+        
+        <button class="btn-gateway" onclick="loginNativoGoogle()">
+          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 0 48 48">
+            <g><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></g>
+          </svg>
+          Soy Docente / Admin
+        </button>
+
+        <button class="btn-gateway" onclick="mostrarLoginAlumno()">
+          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 0 48 48">
+            <g><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></g>
+          </svg>
+          Soy Alumno
         </button>
       </div>
+
+      <!-- CONTENEDOR DE FORMULARIO (Oculto inicialmente) -->
+      <div id="login-form-container" class="hidden">
+        <div id="login-status-banner" class="status-banner-blue hidden">
+          <div class="spinner-white"></div>
+          <span id="login-msg">Validando...</span>
+        </div>
+
+        <div class="input-wrapper-modern">
+          <input type="email" id="email" class="input-flat" placeholder="Correo Electrónico">
+          <div class="icon-box">👤</div>
+        </div>
+
+        <div class="input-wrapper-modern" id="pass-container">
+          <input type="password" id="pass" class="input-flat" placeholder="Contraseña">
+          <div class="icon-box">🔒</div>
+        </div>
+
+        <a class="forgot-link" id="link-recuperar" onclick="recuperarPassword()" style="display:block; margin-bottom: 2rem;">¿Olvidaste tu contraseña?</a>
+
+        <div style="margin-top: 2rem;">
+          <button class="btn-login-white" onclick="procesarLogin()">
+            <span id="btn-text">Iniciar Sesión</span>
+            <div id="btn-loader" class="spinner-blue hidden"></div>
+          </button>
+        </div>
+
+        <p class="back-to-selection" onclick="volverASeleccion()">⬅ Volver a selección</p>
+      </div>
+
+      <!-- El botón de Google nativo viejo ya no es necesario aquí porque está en el gateway -->
+      <div id="google-login-button-container" class="hidden"></div>
       
-      <p class="forgot-link" id="toggle-login-mode" onclick="alternarModoLogin()" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 15px;">
-        🎓 ¿Eres Alumno? Ingresa aquí
-      </p>
-
-      <p id="link-recuperar" class="forgot-link" onclick="abrirModalRecuperacion()" style="font-size:0.8rem; opacity:0.8;">
-        ¿Olvidaste tu contraseña?
-      </p>
-
     </div>
   </div>
 
@@ -66,11 +94,14 @@
           <small style="color:#94a3b8;">Portal del Estudiante</small>
         </div>
       </div>
-      <div style="display:flex; gap:10px;">
-        <button onclick="irAMisEventos()" class="btn-alt" style="border-color:#60a5fa; color:#60a5fa;">📚 Mis Cursos</button>
-        <button onclick="irAMiHorario()" class="btn-alt" style="border-color:#60a5fa; color:#60a5fa;">📅 Mi Horario</button>
-        <button onclick="irADiplomas()" class="btn-alt" style="border-color:#60a5fa; color:#60a5fa;">🎓 Diplomas</button>
-        <button onclick="logoutAlumno()" class="btn-salir">Salir</button>
+      <div class="nav-actions">
+        <button onclick="irAMisEventos()" class="btn-alt" style="border-color:#60a5fa; color:#60a5fa;" title="Mis Cursos">📚 <span class="btn-text">Mis Cursos</span></button>
+        <button onclick="irAMiHorario()" class="btn-alt" style="border-color:#60a5fa; color:#60a5fa;" title="Mi Horario">📅 <span class="btn-text">Mi Horario</span></button>
+        <button onclick="irADiplomas()" class="btn-alt" style="border-color:#60a5fa; color:#60a5fa;" title="Diplomas">🎓 <span class="btn-text">Diplomas</span></button>
+        <div id="refresh-student" class="bell-container" onclick="location.reload()" title="Recargar página">
+          <span style="font-size:1.3rem;">🔄</span>
+        </div>
+        <button onclick="logoutAlumno()" class="btn-salir" title="Salir">🚪 <span class="btn-text">Salir</span></button>
       </div>
     </header>
     <div id="student-content" style="color:white;">
@@ -83,16 +114,19 @@
       <div class="brand">🚀 <strong>Eventos Manager</strong></div>
       <div class="nav-actions">
         <span id="user-display" style="margin-right:10px; font-size:0.85rem; border-right: 1px solid #334155; padding-right:15px;"></span>
-        <button id="btn-backup-bd" onclick="descargarBackupBD()" class="btn-alt hidden">💾 Backup BD</button>
-        <button id="btn-logs" onclick="irALogs()" class="btn-alt hidden">📜 Auditoría</button>
-        <button id="btn-usuarios-config" onclick="irAGestionUsuarios()" class="btn-alt hidden">👥 Usuarios</button>
-        <button id="btn-participantes-crud" onclick="irACrudParticipantes()" class="btn-alt hidden">👥 Directorio Alumnos</button>
-        <button id="btn-admin-config" onclick="irACrearEvento()" class="btn-p hidden">⚙️ Configurar Taller</button>
-        <button id="btn-stats" onclick="irAStats()" class="btn-alt hidden">📊 Estadísticas</button>
-        <button id="btn-reportes" onclick="irAReportes()" class="btn-alt hidden">📈 Reportes</button>
+        <button id="btn-backup-bd" onclick="descargarBackupBD()" class="btn-alt hidden" title="Backup BD">💾 <span class="btn-text">Backup BD</span></button>
+        <button id="btn-logs" onclick="irALogs()" class="btn-alt hidden" title="Auditoría">📜 <span class="btn-text">Auditoría</span></button>
+        <button id="btn-usuarios-config" onclick="irAGestionUsuarios()" class="btn-alt hidden" title="Usuarios">👥 <span class="btn-text">Usuarios</span></button>
+        <button id="btn-participantes-crud" onclick="irACrudParticipantes()" class="btn-alt hidden" title="Directorio Alumnos">👥 <span class="btn-text">Directorio Alumnos</span></button>
+        <button id="btn-admin-config" onclick="irACrearEvento()" class="btn-p hidden" title="Configurar Taller">⚙️ <span class="btn-text">Configurar Taller</span></button>
+        <button id="btn-stats" onclick="irAStats()" class="btn-alt hidden" title="Estadísticas">📊 <span class="btn-text">Estadísticas</span></button>
+        <button id="btn-reportes" onclick="irAReportes()" class="btn-alt hidden" title="Reportes">📈 <span class="btn-text">Reportes</span></button>
         
-        <button onclick="irAMiHorario()" class="btn-alt">📅 Mi Horario</button>
-        <button onclick="logout()" class="btn-salir">Salir</button>
+        <button onclick="irAMiHorario()" class="btn-alt" title="Mi Horario">📅 <span class="btn-text">Mi Horario</span></button>
+        <div id="refresh-main" class="bell-container" onclick="location.reload()" title="Recargar página">
+          <span style="font-size:1.3rem;">🔄</span>
+        </div>
+        <button onclick="logout()" class="btn-salir" title="Salir">🚪 <span class="btn-text">Salir</span></button>
         
       </div>
     </header>
@@ -105,7 +139,7 @@
              <h2 style="margin:0; color:#1e3a8a;">📊 Tablero de Control Académico</h2>
              <p style="margin:0; color:#64748b; font-size:0.9rem;">Métricas de rendimiento y calidad educativa</p>
           </div>
-          <button class="btn-back" onclick="irAEventos()">⬅ Volver</button>
+          <button class="btn-back" onclick="irAEventos()" title="Volver">⬅ <span class="btn-text">Volver</span></button>
         </div>
 
         <div class="card" style="margin-bottom:10px; display:flex; gap:10px; align-items:end; flex-wrap:wrap; background:#f8fafc; border:1px solid #e2e8f0; padding: 15px;">
@@ -121,8 +155,8 @@
              <label class="label-form">Hasta</label>
              <input type="date" id="filtro-fin" class="input-flat" style="background:white;">
           </div>
-          <button onclick="cargarDashboardPro()" class="btn-p">🔍 Filtrar</button>
-          <button onclick="descargarReporteExcel()" class="btn-alt" style="background:#10b981; color:white; border:none;">📥 Excel</button>
+          <button onclick="cargarDashboardPro()" class="btn-p" title="Filtrar">🔍 <span class="btn-text">Filtrar</span></button>
+          <button onclick="descargarReporteExcel()" class="btn-alt" style="background:#10b981; color:white; border:none;" title="Excel">📥 <span class="btn-text">Excel</span></button>
         </div>
 
         <div class="grid-metrics" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:15px; margin-bottom:15px;">
@@ -178,10 +212,10 @@
           <h2 style="margin:0;">Talleres Disponibles</h2>
           <div style="display:flex; gap:15px; align-items:center;">
              <div style="display:flex;">
-                <button class="btn-view active" id="btn-view-cards" onclick="setEventView('cards')" title="Vista Tarjetas">Tarjeta</button>
-                <button class="btn-view" id="btn-view-list" onclick="setEventView('list')" title="Vista Lista">Lista</button>
+                <button class="btn-view active" id="btn-view-cards" onclick="setEventView('cards')" title="Vista Tarjetas">📇 <span class="btn-text">Tarjeta</span></button>
+                <button class="btn-view" id="btn-view-list" onclick="setEventView('list')" title="Vista Lista">📄 <span class="btn-text">Lista</span></button>
              </div>
-             <button class="btn-alt" onclick="irAGestion()">+ Inscribir Nuevo Alumno</button>
+             <button class="btn-alt" onclick="irAGestion()" title="Inscribir Nuevo Alumno">➕ <span class="btn-text">Inscribir Nuevo Alumno</span></button>
           </div>
         </div>
         <div id="eventos-list" class="grid-eventos">
@@ -190,7 +224,7 @@
 
       <section id="crear-evento-section" class="hidden animate-in">
         <div style="max-width: 550px; margin: 0 auto; background: var(--card-dark); padding: 2rem; border-radius: 20px;">
-          <button class="btn-back" onclick="irAEventos()">⬅ Volver</button>
+          <button class="btn-back" onclick="irAEventos()" title="Volver">⬅ <span class="btn-text">Volver</span></button>
           <h2 id="titulo-taller" style="margin-top:1.5rem;">Configurar Taller</h2>
           
           <input type="hidden" id="ev-id"> <div class="input-group">
@@ -220,7 +254,7 @@
             </div>
             <div class="input-group" style="flex:1;">
               <label class="label-form">Cupo Máx. <span class="required">(*)</span></label>
-              <input type="number" id="ev-cupo">
+              <input type="number" id="ev-cupo" min="1">
             </div>
           </div>
           
@@ -230,15 +264,15 @@
           </div>
           
           <div style="display:flex; gap:10px; margin-top:10px;">
-             <button id="btn-guardar-ev" class="btn-p" style="flex:1;" onclick="guardarEventoNuevo()">Guardar Evento</button>
-             <button id="btn-borrar-ev" class="btn-alt" style="background:#ef4444; color:white; border:none; display:none;" onclick="borrarEventoActual()">Eliminar</button>
+             <button id="btn-guardar-ev" class="btn-p" style="flex:1;" onclick="guardarEventoNuevo()" title="Guardar Evento">💾 <span class="btn-text">Guardar Evento</span></button>
+             <button id="btn-borrar-ev" class="btn-alt" style="background:#ef4444; color:white; border:none; display:none;" onclick="borrarEventoActual()" title="Eliminar">🗑️ <span class="btn-text">Eliminar</span></button>
           </div>
         </div>
       </section>
 
       <section id="gestion-participantes" class="hidden animate-in">
         <div style="max-width: 500px; margin: 0 auto; background: var(--card-dark); padding: 2rem; border-radius: 20px;">
-          <button class="btn-back" onclick="irAEventos()">⬅ Volver</button>
+          <button class="btn-back" onclick="irAEventos()" title="Volver">⬅ <span class="btn-text">Volver</span></button>
           <button class="btn-alt" onclick="abrirModalCarga()" style="background:#059669; font-size:0.8rem;">📂 Carga Masiva (Excel)</button>
           <h2 style="margin-top:1.5rem;">Inscripción de Participantes</h2>
           <div class="input-group">
@@ -253,13 +287,13 @@
             <label class="label-form">Correo Electrónico del Alumno <span class="required">(*)</span></label>
             <input type="email" id="p-correo">
           </div>
-          <button class="btn-p" style="width:100%;" onclick="guardarNuevoParticipante()">Validar e Inscribir</button>
+          <button class="btn-p" style="width:100%;" onclick="guardarNuevoParticipante()" title="Validar e Inscribir">✅ <span class="btn-text">Validar e Inscribir</span></button>
         </div>
       </section>
 
       <section id="asistencia-panel" class="hidden animate-in">
         <div style="padding: 0 5%;">
-          <button class="btn-back" onclick="irAEventos()">⬅ Regresar a Cartelera</button>
+          <button class="btn-back" onclick="irAEventos()" title="Regresar a Cartelera">⬅ <span class="btn-text">Regresar a Cartelera</span></button>
           
           <div style="display:flex; justify-content:space-between; align-items:end; margin-top:1.5rem;">
             <div>
@@ -268,9 +302,9 @@
             </div>
             
             <div style="text-align:right; display:flex; gap:10px; align-items:flex-end;">
-              <button onclick="verHistorial()" class="btn-alt">📊 Ver Historial</button>
-              <button class="btn-alt" onclick="iniciarEscaner()" style="background:#2563eb; margin-right:5px;">📷 Escanear QR</button>
-              <button class="btn-secondary" onclick="cargarListaAsistencia(cursoActivoID)" title="Actualizar">🔄 Recargar</button>
+              <button onclick="verHistorial()" class="btn-alt" title="Ver Historial">📊 <span class="btn-text">Ver Historial</span></button>
+              <button class="btn-alt" onclick="iniciarEscaner()" style="background:#2563eb; margin-right:5px;" title="Escanear QR">📷 <span class="btn-text">Escanear QR</span></button>
+              <button class="btn-secondary" onclick="cargarListaAsistencia(cursoActivoID)" title="Actualizar">🔄 <span class="btn-text">Recargar</span></button>
               <div>
                 <label style="display:block; font-size:0.75rem; font-weight:bold; color:#94a3b8; margin-bottom:5px;">📅 Fecha de la Sesión</label>
                 <input type="date" id="fecha-sesion-asist" class="input-flat" 
@@ -292,19 +326,19 @@
             </table>
           </div>
           <div style="margin-top:20px; text-align:right;">
-            <button class="btn-p" onclick="guardarAsistencia()">💾 Guardar Asistencia del Día</button>
+            <button class="btn-p" onclick="guardarAsistencia()" title="Guardar Asistencia del Día">💾 <span class="btn-text">Guardar Asistencia del Día</span></button>
           </div>
         </div>
       </section>
 
       <section id="horario-section" class="hidden animate-in">
         <div style="padding: 0 5%;">
-          <button class="btn-back" onclick="irAEventos()">⬅ Volver</button>
+          <button class="btn-back" onclick="irAEventos()" title="Volver">⬅ <span class="btn-text">Volver</span></button>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; margin-bottom:1rem;">
              <h2 style="margin:0;">Mi Agenda Personal</h2>
              <div style="display:flex; gap:10px;">
-                <button class="btn-alt" onclick="toggleCalendario('list')">📋 Lista</button>
-                <button class="btn-alt" onclick="toggleCalendario('calendar')">📅 Calendario</button>
+                <button class="btn-alt" onclick="toggleCalendario('list')" title="Lista">📋 <span class="btn-text">Lista</span></button>
+                <button class="btn-alt" onclick="toggleCalendario('calendar')" title="Calendario">📅 <span class="btn-text">Calendario</span></button>
              </div>
           </div>
 
@@ -332,9 +366,9 @@
       <section id="usuarios-section" class="hidden animate-in">
         <div style="padding: 0 5%;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-             <button class="btn-back" onclick="irAEventos()">⬅ Volver</button>
+             <button class="btn-back" onclick="irAEventos()" title="Volver">⬅ <span class="btn-text">Volver</span></button>
              <h2 style="margin:0;">Panel de Usuarios</h2>
-             <button class="btn-p" onclick="abrirModalUsuario()">+ Nuevo Usuario</button>
+             <button class="btn-p" onclick="abrirModalUsuario()" title="Nuevo Usuario">➕ <span class="btn-text">Nuevo Usuario</span></button>
           </div>
           <div class="tabla-container" style="background:var(--card-dark); border-radius:15px; padding:15px; margin-top:20px;">
             <table style="width: 100%; border-collapse: collapse;">
@@ -356,7 +390,7 @@
         <div style="padding: 0 5%;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; flex-wrap:wrap; gap:10px;">
              <div style="display:flex; align-items:center; gap:10px;">
-                <button class="btn-back" onclick="irAEventos()">⬅ Volver</button>
+                <button class="btn-back" onclick="irAEventos()" title="Volver">⬅ <span class="btn-text">Volver</span></button>
                 <h2 style="margin:0; font-size:1.5rem;">Historial de Auditoría</h2>
              </div>
              
@@ -389,12 +423,12 @@
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
              
              <div style="display:flex; gap:10px; align-items:center;">
-                <button class="btn-back" onclick="irAEventos()">⬅ Volver</button>
+                <button class="btn-back" onclick="irAEventos()" title="Volver">⬅ <span class="btn-text">Volver</span></button>
                 <button class="btn-alt" onclick="cargarGradebook()" style="padding: 8px 12px; font-size: 1rem;" title="Recargar Promedios">🔄</button>
              </div>
 
              <h2 style="margin:0;">Libro de Calificaciones</h2>
-             <button class="btn-p" onclick="abrirModalTarea()">+ Nueva Actividad</button>
+             <button class="btn-p" onclick="abrirModalTarea()" title="Nueva Actividad">➕ <span class="btn-text">Nueva Actividad</span></button>
           </div>
           
           <div class="table-responsive"> <table id="tabla-notas" style="width: 100%; border-collapse: collapse;">
@@ -410,8 +444,9 @@
              <button class="btn-back" onclick="irAEventos()">⬅ Volver</button>
              <h2 style="margin:0;">Directorio de Alumnos</h2>
              <div style="display:flex; gap:10px;">
-                <button class="btn-p" onclick="abrirModalCrearDesdeCrud()">+ Nuevo Alumno</button>
-                <button class="btn-alt" onclick="cargarTablaParticipantes()">🔄 Actualizar</button>
+                <button id="btn-borrar-seleccionados" class="btn-alt" style="background:#ef4444; color:white; border:none; display:none;" onclick="borrarSeleccionados()" title="Eliminar seleccionados">&#128465;&#65039; <span class="btn-text">Eliminar seleccionados (<span id="count-seleccionados">0</span>)</span></button>
+                 <button class="btn-p" onclick="abrirModalCrearDesdeCrud()" title="Nuevo Alumno">➕ <span class="btn-text">Nuevo Alumno</span></button>
+                <button class="btn-alt" onclick="cargarTablaParticipantes()" title="Actualizar">🔄 <span class="btn-text">Actualizar</span></button>
              </div>
           </div>
 
@@ -425,7 +460,8 @@
             <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
               <thead>
                 <tr style="border-bottom: 1px solid #334155; text-align:left; color:#94a3b8;">
-                  <th style="padding:15px;">Nombre del Alumno</th>
+                  <th style="padding:15px; width:40px;"><input type="checkbox" id="chk-select-all" onchange="toggleSelectAll(this)" title="Seleccionar todos" style="width:18px; height:18px; cursor:pointer;"></th>
+                   <th style="padding:15px;">Nombre del Alumno</th>
                   <th style="padding:15px;">Correo</th>
                   <th style="padding:15px;">Curso / Taller Inscrito</th>
                   <th style="padding:15px; text-align:right;">Acciones</th>
@@ -474,6 +510,12 @@
           <div class="title-rep">Cuadro de Honor</div>
        </div>
 
+       <!-- NUEVO REPORTE ENCUESTAS -->
+       <div onclick="cargarReporte('ENCUESTAS')" class="card-reporte">
+          <div class="icon-rep">⭐</div>
+          <div class="title-rep">Satisfacción (Encuestas)</div>
+       </div>
+
     </div>
 
     <div id="contenedor-reporte-resultado" class="hidden">
@@ -515,7 +557,7 @@
 
       <div class="input-group">
         <label class="label-form">Ponderación (%)</label>
-        <input type="number" id="t-peso" placeholder="Ej: 20" class="input-flat" style="width: 100%; box-sizing: border-box;">
+        <input type="number" id="t-peso" placeholder="Ej: 20" class="input-flat" style="width: 100%; box-sizing: border-box;" min="0">
         <small style="color: #64748b; font-size: 0.75rem;">El valor porcentual sobre la nota final.</small>
       </div>
 
@@ -894,214 +936,114 @@
     </div>
   </div>
 
-  <?!= incluir('js'); ?>
-<div id="modal-preview-pdf" class="modal-overlay hidden" style="z-index: 2000;">
-  <div class="modal-card" style="width: 800px; max-width: 95%; height: 85vh; padding: 0; display:flex; flex-direction:column; overflow:hidden;">
-     
-     <div style="padding:15px; background:#1e293b; display:flex; justify-content:space-between; align-items:center; color:white;">
-        <h3 style="margin:0; font-size:1rem;">👁️ Vista Previa del Diploma</h3>
-        <button onclick="document.getElementById('modal-preview-pdf').classList.add('hidden')" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
-     </div>
-
-     <div style="flex:1; background:#334155; position:relative;">
-        
-        <div id="pdf-loader" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; color:white;">
-           <div style="font-size:3rem; animation: spin 1s linear infinite;">⏳</div>
-           <p style="margin-top:10px;">Generando vista previa...</p>
-        </div>
-
-        <iframe id="pdf-frame" style="width:100%; height:100%; border:none;" class="hidden"></iframe>
-     
-     </div>
-  </div>
-</div>
-
-<style>
-@keyframes spin { 100% { transform: rotate(360deg); } }
-</style>
-<div id="modal-confirmar-borrado" class="modal-overlay hidden" style="z-index: 3000;">
-  <div class="modal-card animate-in" style="width: 400px; text-align: center; border-top: 5px solid #ef4444;">
-    
-    <div style="background: #fef2f2; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
-       <span style="font-size: 2rem;">🗑️</span>
+  <!-- MODAL DE CONFIRMACIÓN DE BORRADO -->
+  <div id="modal-confirmar-borrado" class="modal-overlay hidden" style="z-index: 3000;">
+    <div class="modal-card animate-in" style="width: 400px; text-align: center; border-top: 5px solid #ef4444;">
+      <div style="background: #fef2f2; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+         <span style="font-size: 2rem;">🗑️</span>
+      </div>
+      <h3 style="color: #1e293b; margin: 0;">¿Estás seguro?</h3>
+      <p style="color: #64748b; font-size: 0.9rem; margin: 10px 0 20px 0; line-height: 1.5;">
+         Vas a eliminar esta actividad permanentemente. <br>
+         <strong style="color: #ef4444;">SE PERDERÁN TODAS LAS NOTAS ASOCIADAS.</strong>
+      </p>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+         <button onclick="cerrarModalBorrado()" class="btn-back" style="flex: 1;">Cancelar</button>
+         <button onclick="ejecutarBorradoTarea()" class="btn-p" style="flex: 1; background: #ef4444; border: 1px solid #dc2626;">Sí, Eliminar</button>
+      </div>
     </div>
-
-    <h3 style="color: #1e293b; margin: 0;">¿Estás seguro?</h3>
-    
-    <p style="color: #64748b; font-size: 0.9rem; margin: 10px 0 20px 0; line-height: 1.5;">
-       Vas a eliminar esta actividad permanentemente. <br>
-       <strong style="color: #ef4444;">SE PERDERÁN TODAS LAS NOTAS ASOCIADAS.</strong>
-    </p>
-
-    <div style="display: flex; gap: 10px; justify-content: center;">
-       <button onclick="cerrarModalBorrado()" class="btn-back" style="flex: 1;">Cancelar</button>
-       <button onclick="ejecutarBorradoTarea()" class="btn-p" style="flex: 1; background: #ef4444; border: 1px solid #dc2626;">Sí, Eliminar</button>
-    </div>
-
   </div>
-</div>
-<div id="student-screen" class="hidden" style="background: #f1f5f9; min-height: 100vh;">
+
+  <!-- VISTA PREVIA PDF -->
+  <div id="modal-preview-pdf" class="modal-overlay hidden" style="z-index: 2000;">
+    <div class="modal-card" style="width: 800px; max-width: 95%; height: 85vh; padding: 0; display:flex; flex-direction:column; overflow:hidden;">
+       <div style="padding:15px; background:#1e293b; display:flex; justify-content:space-between; align-items:center; color:white;">
+          <h3 style="margin:0; font-size:1rem;">👁️ Vista Previa del Diploma</h3>
+          <button onclick="document.getElementById('modal-preview-pdf').classList.add('hidden')" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
+       </div>
+       <div style="flex:1; background:#334155; position:relative;">
+          <div id="pdf-loader" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; color:white;">
+             <div style="font-size:3rem; animation: spin 1s linear infinite;">⏳</div>
+             <p style="margin-top:10px;">Generando vista previa...</p>
+          </div>
+          <iframe id="pdf-frame" style="width:100%; height:100%; border:none;" class="hidden"></iframe>
+       </div>
+    </div>
+  </div>
+
+  <style>
+  @keyframes spin { 100% { transform: rotate(360deg); } }
   
-  <header style="background: #2563eb; padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-     <div style="display:flex; align-items:center; gap:10px;">
-        <span style="font-size:1.5rem;">🎓</span>
-        <div style="font-weight: bold; font-size: 1.1rem;">Mi Portal Académico</div>
-     </div>
-     <button onclick="logoutAlumno()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size:0.9rem; transition: background 0.2s;">
-        Cerrar Sesión
-     </button>
-  </header>
+  /* SISTEMA DE NOTIFICACIONES */
+  .bell-container {
+    position: relative;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-  <main style="padding: 30px 5%; max-width: 1000px; margin: 0 auto;">
-     
-     <div style="background: white; border-radius: 16px; padding: 30px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;">
-        <div style="font-size: 3.5rem; margin-bottom: 10px;">👋</div>
-        <h2 id="student-name" style="margin: 0; color: #1e293b; font-size:1.8rem;">Bienvenido</h2>
-        <p style="color: #64748b; margin-top:10px;">Aquí tienes el historial de tus cursos y calificaciones en tiempo real.</p>
-     </div>
+  }
+  </style>
 
-     <div id="student-content">
+
+  <!-- MODAL DE ENCUESTA -->
+  <div id="modal-encuesta" class="modal-overlay hidden" style="z-index: 2100;">
+    <div class="modal-card animate-in" style="width: 450px; max-width: 95%;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="font-size: 3rem;">⭐</span>
+        <h3 id="encuesta-nombre-taller" style="margin: 10px 0 5px 0; color: #1e293b;">Calificar Taller</h3>
+        <p style="color: #64748b; font-size: 0.9rem;">Tu opinión nos ayuda a mejorar.</p>
+      </div>
+
+      <div class="survey-category">
+        <label>Satisfacción General</label>
+        <div class="star-rating" data-categoria="general" data-value="0">
+          <span class="star" data-value="1">★</span>
+          <span class="star" data-value="2">★</span>
+          <span class="star" data-value="3">★</span>
+          <span class="star" data-value="4">★</span>
+          <span class="star" data-value="5">★</span>
         </div>
-
-  </main>
-</div>
-<div id="modal-detalle-alumno" class="modal-overlay hidden" style="z-index: 3000;">
-  <div class="modal-card animate-in" style="width: 500px; max-width: 95%;">
-     
-     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
-        <h3 style="margin:0; color:#1e293b; font-size:1.1rem;">📝 Desglose de Calificaciones</h3>
-        <button onclick="document.getElementById('modal-detalle-alumno').classList.add('hidden')" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
-     </div>
-     
-     <h4 id="detalle-titulo-curso" style="color:#2563eb; margin-top:0;">Curso</h4>
-
-     <div style="background:#f8fafc; border-radius:8px; overflow:hidden; border:1px solid #e2e8f0;">
-        <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
-           <thead>
-              <tr style="background:#e2e8f0; text-align:left;">
-                 <th style="padding:10px; color:#475569;">Actividad</th>
-                 <th style="padding:10px; text-align:center; color:#475569;">Peso</th>
-                 <th style="padding:10px; text-align:center; color:#475569;">Nota</th>
-              </tr>
-           </thead>
-           <tbody id="tabla-detalle-notas">
-              </tbody>
-        </table>
-     </div>
-
-     <div style="margin-top:20px; text-align:right;">
-        <button onclick="document.getElementById('modal-detalle-alumno').classList.add('hidden')" class="btn-back">Cerrar</button>
-     </div>
-
-  </div>
-</div>
-<div id="modal-asistencia-alumno" class="modal-overlay hidden" style="z-index: 3000;">
-  <div class="modal-card animate-in" style="width: 400px; max-width: 95%;">
-     
-     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
-        <h3 style="margin:0; color:#1e293b; font-size:1.1rem;">📅 Historial de Asistencia</h3>
-        <button onclick="document.getElementById('modal-asistencia-alumno').classList.add('hidden')" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
-     </div>
-     
-     <h4 id="asist-titulo-curso" style="color:#2563eb; margin-top:0;">Curso</h4>
-
-     <div style="background:#f8fafc; border-radius:8px; overflow:hidden; border:1px solid #e2e8f0; max-height: 300px; overflow-y: auto;">
-        <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
-           <thead>
-              <tr style="background:#e2e8f0; text-align:left;">
-                 <th style="padding:10px; color:#475569;">Fecha</th>
-                 <th style="padding:10px; text-align:center; color:#475569;">Estado</th>
-              </tr>
-           </thead>
-           <tbody id="tabla-detalle-asistencia">
-              </tbody>
-        </table>
-     </div>
-
-     <div style="margin-top:20px; text-align:right;">
-        <button onclick="document.getElementById('modal-asistencia-alumno').classList.add('hidden')" class="btn-back">Cerrar</button>
-     </div>
-
-  </div>
-</div>
-  </div>
-</div>
-
-<div id="modal-backup" class="modal-overlay hidden">
-  <div class="modal-card animate-in" style="width: 450px; max-width: 95%;">
-    <div style="text-align: center; margin-bottom: 20px;">
-       <span style="font-size: 3rem;">📦</span>
-       <h3 style="margin: 10px 0 5px 0; color: #1e293b;">Copia de Seguridad</h3>
-       <p style="color: #64748b; font-size: 0.9rem;">Elige el formato para descargar tus datos.</p>
-    </div>
-
-    <div style="display: flex; flex-direction: column; gap: 15px;">
-       
-       <button onclick="iniciarBackupExcel()" class="btn-p" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: #10b981;">
-          <span style="font-size: 1.2rem;">📊</span> 
-          <div>
-             <div style="font-weight: bold;">Generar Excel</div>
-             <div style="font-size: 0.75rem; opacity: 0.9;">Copia completa en Google Drive</div>
-          </div>
-       </button>
-
-
-       <button onclick="iniciarBackupJSON()" class="btn-p" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: #3b82f6;">
-          <span style="font-size: 1.2rem;">📄</span> 
-          <div>
-             <div style="font-weight: bold;">Descargar JSON</div>
-             <div style="font-size: 0.75rem; opacity: 0.9;">Archivo de texto portable</div>
-          </div>
-       </button>
-
-       <div style="border-top: 1px solid #cbd5e1; margin: 10px 0;"></div>
-
-       <button onclick="document.getElementById('input-restore-json').click()" class="btn-p" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: #f59e0b;">
-          <span style="font-size: 1.2rem;">📂</span> 
-          <div>
-             <div style="font-weight: bold;">Restaurar desde JSON</div>
-             <div style="font-size: 0.75rem; opacity: 0.9;">Seleccionar archivo para cargar</div>
-          </div>
-       </button>
-       <input type="file" id="input-restore-json" accept=".json" style="display:none" onchange="procesarArchivoRestore(this)">
-
-    </div>
-
-    <button onclick="document.getElementById('modal-backup').classList.add('hidden')" class="btn-back" style="width: 100%; margin-top: 25px;">Cancelar</button>
-  </div>
-</div>
-
-<div id="modal-codigo-alumno" class="modal-overlay hidden">
-    <div class="modal-card" style="width: 400px; padding:30px;">
-      
-      <div style="margin-bottom:20px;">
-        <span style="font-size:3rem;">🛡️</span>
-        <h3 style="margin:10px 0 5px 0; color:#1e293b;">Verificación de Seguridad</h3>
-        <p style="color:#64748b; font-size:0.9rem;">Hemos enviado un código a tu correo.</p>
-        <p id="msg-email-alumno" style="font-weight:bold; color:#2563eb; font-size:0.9rem; margin-bottom:5px;"></p>
+        <div id="lbl-general" class="rating-label"></div>
       </div>
 
-      <div class="input-group">
-         <label class="label-form" style="text-align:center;">Ingresa el Código</label>
-         <input type="text" id="input-codigo-2fa" placeholder="123456" 
-                style="font-size: 1.5rem; text-align: center; letter-spacing: 5px; font-weight: bold; color: #334155;" maxlength="6">
+      <div class="survey-category">
+        <label>Calidad del Docente</label>
+        <div class="star-rating" data-categoria="docente" data-value="0">
+          <span class="star" data-value="1">★</span>
+          <span class="star" data-value="2">★</span>
+          <span class="star" data-value="3">★</span>
+          <span class="star" data-value="4">★</span>
+          <span class="star" data-value="5">★</span>
+        </div>
+        <div id="lbl-docente" class="rating-label"></div>
       </div>
 
-      <button onclick="confirmarCodigoAlumno()" class="btn-p" style="width:100%; margin-top:10px;">Verificar y Entrar</button>
-      
-      <div style="margin-top:20px; font-size:0.85rem; color:#64748b;">
-         ¿No recibiste el código? <br>
-         <button id="btn-reenviar-code" onclick="reenviarCodigo()" disabled 
-                 style="background:none; border:none; color:#94a3b8; cursor:not-allowed; margin-top:5px; font-weight:bold;">
-             Reenviar en 30s
-         </button>
+      <div class="survey-category">
+        <label>Material Didáctico</label>
+        <div class="star-rating" data-categoria="material" data-value="0">
+          <span class="star" data-value="1">★</span>
+          <span class="star" data-value="2">★</span>
+          <span class="star" data-value="3">★</span>
+          <span class="star" data-value="4">★</span>
+          <span class="star" data-value="5">★</span>
+        </div>
+        <div id="lbl-material" class="rating-label"></div>
       </div>
 
-      <button onclick="cerrarModalCodigoAlumno()" class="btn-back" style="width:100%; margin-top:20px; border:none;">Cancelar</button>
+      <div class="input-group" style="margin-top: 15px;">
+        <label class="label-form">Comentarios Adicionales</label>
+        <textarea id="encuesta-comentario" rows="3" class="input-flat" placeholder="Cuéntanos más..."></textarea>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 25px;">
+        <button onclick="cerrarModalEncuesta()" class="btn-back" style="flex: 1;">Saltar</button>
+        <button onclick="enviarEncuesta()" class="btn-p" style="flex: 1;">Enviar Evaluación</button>
+      </div>
     </div>
   </div>
-  <div id="toast-container"></div>
 
-  <audio id="audio-beep" src="data:audio/mpeg;base64,SUQzBAAAAAABAFRYWFQAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFhUAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhUAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAOAAADTGF2ZjU3LjU2LjEwMAAAAAAAAAAAAAAA//tQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABwAADDAcKCg4OEhIVFRoaHR0iIiYmKiouLjIyNzc7O0BAREQAAAD//tQZAAABAAAAAAAAAAAAAAABAAAAAABMYXZjNTcuNjQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/7UmQAABAAABpAAAACAAADSAAAAEAEGaWF/AAABpAAAACABFmlgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//tQZAAAAAAAAGkAAAAIAAANIAAAAQAAAAAAAAAAAAdeeADgAAABpAAAACAAADSAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//tQZAAAAAAAAGkAAAAIAAANIAAAAQAAAAAAAAAAAAdeeADgAAABpAAAACAAADSAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//tQZAAAAAAAAGkAAAAIAAANIAAAAQAAAAAAAAAAAAdeeADgAAABpAAAACAAADSAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//tQZAQAAAAAAGkAAAAIAAANIAAAAQAAAAAAAAAAAAdeeADgAAABpAAAACAAADSAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"></audio>
+  <?!= incluir('js'); ?>
 </body>
 </html>
