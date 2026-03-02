@@ -55,10 +55,8 @@ Gestionar:
 - [/certificados](https://github.com/Estancia-Esit/cloud-attendance-lite/tree/main/certificados) -> Plantilla de certificados
 - [/db](https://github.com/Estancia-Esit/cloud-attendance-lite/tree/main/db) -> ERD de la base de datos
 - [/docs](https://github.com/Estancia-Esit/cloud-attendance-lite/tree/main/docs) -> Documentación del proyecto
-- [/frontend](https://github.com/Estancia-Esit/cloud-attendance-lite/tree/main/frontend) -> Interfaz de usuario
-- [/tests](https://github.com/Estancia-Esit/cloud-attendance-lite/tree/main/tests) -> Archivos utilizados en la realización de pruebas
+- [/frontend](https://github.com/Estancia-Esit/cloud-attendance-lite/tree/main/frontend) -> UI web
+- [/tests](https://github.com/Estancia-Esit/cloud-attendance-lite/tree/main/tests) -> Diferentes archivos de pruebas usados durante la estancia
 
-## Drive principal (almacén de recursos)
+### Drive principal (almacén de recursos)
 [Recursos](https://drive.google.com/drive/folders/1Th_eAFZygPB6hl5mphQjVsipQo2nlA4-?usp=sharing)
-- `/frontend` -> UI web (prototipo)
-- `/tests` -> Diferentes archivos de pruebas usados durante el desarrollo
