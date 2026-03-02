@@ -13,8 +13,7 @@
 - David Mauricio González Estupinián - Ingeniero Cloud Jr.
 - Héctor Benjamín Chipagua Calles - Recurso inactivo (por falta de respuesta/participación)
 
-## Proyecto: Plataforma de Registro y Asistencia en la Nube (Cloud Attendance Lite)
-[Enlace de la aplicación](https://script.google.com/macros/s/AKfycbx4mkPHZW_EQdWeK6tnvDLxNlpY_-75lCKjwk442lA1bdZUZjFExKkOsZmdEl4Qh0TO/exec)
+## Proyecto: [Plataforma de Registro y Asistencia en la Nube (Cloud Attendance Lite)](https://script.google.com/macros/s/AKfycbx4mkPHZW_EQdWeK6tnvDLxNlpY_-75lCKjwk442lA1bdZUZjFExKkOsZmdEl4Qh0TO/exec)
 
 ### Duración total de proyecto:
 10 semanas, organizadas en Fase 0 a Fase 4, según el Plan de trabajo semanal (visión operativa) que abarca desde el onboarding hasta la entrega profesional con demo.
