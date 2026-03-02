@@ -8,4 +8,4 @@
 - [Matriz de Pruebas_FASE 3.xlsx](https://docs.google.com/spreadsheets/d/1Gl4hf-VnSpdfIfEgvjnz0xXF8qc2e8Gl/edit?usp=sharing&ouid=105270265411300215114&rtpof=true&sd=true)
 
 ## Video de Prueba Final
-- [Video_sistema_eventos](https://drive.google.com/file/d/1ZFm4ajdnE-Psfw2zx9Z1BYs78VwUCLXf/view?usp=drive_link)
+- [Video_sistema_eventos.mp4](https://drive.google.com/file/d/1ZFm4ajdnE-Psfw2zx9Z1BYs78VwUCLXf/view?usp=drive_link)
