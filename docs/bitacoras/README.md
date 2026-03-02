@@ -7,3 +7,9 @@
 - [Bitacora Fase 2 V2.pdf](https://drive.google.com/file/d/1QLLCFpg8HXp7S-Ga1mW56-5hRBq22TbT/view?usp=drive_link)
 
 - [Bitacora Fase3 V 6.pdf](https://drive.google.com/file/d/1SOUwIEzHOwFQUYX-41dD9Vzki1E12WJD/view?usp=drive_link)
+
+- [Bitacora Fase 4.pdf](https://drive.google.com/file/d/1JDNcL41PQ-lQqHiRkGxLn6UBS28c0OBh/view?usp=drive_link)
+
+- [Bitacoras consolidadas .pdf](https://drive.google.com/file/d/1WhEnAafesyZgSBsuxMRLzHtjwLPCm4Wb/view?usp=drive_link)
+
+  
