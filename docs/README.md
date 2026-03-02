@@ -59,4 +59,4 @@ Gestionar:
 - [/tests](https://github.com/Estancia-Esit/cloud-attendance-lite/tree/main/tests) -> Diferentes archivos de pruebas usados durante la estancia
 
 ### Drive principal (almacén de recursos)
-[Recursos](https://drive.google.com/drive/folders/1Th_eAFZygPB6hl5mphQjVsipQo2nlA4-?usp=sharing)
+- [Recursos](https://drive.google.com/drive/folders/1Th_eAFZygPB6hl5mphQjVsipQo2nlA4-?usp=sharing)
