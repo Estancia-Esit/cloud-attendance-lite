@@ -23,7 +23,7 @@
 - Fase 1: Análisis del proceso de registro y asistencia ✔️
 - Fase 2: Diseño e implementación de la plataforma ✔️
 - Fase 3: Pruebas, reportes y refinamiento ✔️
-- Fase 4: Cierre, documentación y entrega profesional
+- Fase 4: Cierre, documentación y entrega profesional ✔️
 
 ### Tipo de aplicación
 La solución es una plataforma web/cloud ligera de tipo SaaS académico, orientada a:
