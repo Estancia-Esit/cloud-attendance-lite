@@ -14,6 +14,7 @@
 - Héctor Benjamín Chipagua Calles - Recurso inactivo (por falta de respuesta/participación)
 
 ## Proyecto: Plataforma de Registro y Asistencia en la Nube (Cloud Attendance Lite)
+[Enlace de la aplicación](https://script.google.com/macros/s/AKfycbx4mkPHZW_EQdWeK6tnvDLxNlpY_-75lCKjwk442lA1bdZUZjFExKkOsZmdEl4Qh0TO/exec)
 
 ### Duración total de proyecto:
 10 semanas, organizadas en Fase 0 a Fase 4, según el Plan de trabajo semanal (visión operativa) que abarca desde el onboarding hasta la entrega profesional con demo.
@@ -51,9 +52,14 @@ Gestionar:
 - **Automatización:** Google Apps Script (Web App + onFormSubmit)
 
 ### Estructura
-- `/backend` -> Reglas de negocio de la aplicación
-- `/certificados` -> Plantilla de certificados
-- `/db` -> ERD de la base de datos
-- `/docs` -> Documentación del proyecto
+- [/backend](https://github.com/Estancia-Esit/cloud-attendance-lite/tree/main/backend) -> Reglas de negocio de la aplicación
+- [/certificados](https://github.com/Estancia-Esit/cloud-attendance-lite/tree/main/certificados) -> Plantilla de certificados
+- [/db](https://github.com/Estancia-Esit/cloud-attendance-lite/tree/main/db) -> ERD de la base de datos
+- [/docs](https://github.com/Estancia-Esit/cloud-attendance-lite/tree/main/docs) -> Documentación del proyecto
+- [/frontend](https://github.com/Estancia-Esit/cloud-attendance-lite/tree/main/frontend) -> Interfaz de usuario
+- [/tests](https://github.com/Estancia-Esit/cloud-attendance-lite/tree/main/tests) -> Archivos utilizados en la realización de pruebas
+
+## Drive principal (almacén de recursos)
+[Recursos](https://drive.google.com/drive/folders/1Th_eAFZygPB6hl5mphQjVsipQo2nlA4-?usp=sharing)
 - `/frontend` -> UI web (prototipo)
 - `/tests` -> Diferentes archivos de pruebas usados durante el desarrollo
